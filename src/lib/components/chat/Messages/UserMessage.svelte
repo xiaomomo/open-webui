@@ -215,6 +215,9 @@
 								<Markdown id={message.id} content={message.content} />
 							{/if}
 						</div>
+
+						<ProfileImage
+							src="/static/yaya.jpg" />
 					</div>
 
 					<div

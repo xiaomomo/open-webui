@@ -132,6 +132,40 @@ export const synthesizeOpenAISpeech = async (
 	return res;
 };
 
+// new  GPT_SoVITS invoke API
+export const synthesizeSoVITSSpeech = async (
+	token: string = '',
+	speaker: string = 'alloy',
+	text: string = '',
+	model?: string
+) => {
+	let error = null;
+
+	const url = `http://127.0.0.1:9880/?refer_wav_path=${encodeURIComponent("output/slicer_opt/blippi_sound.mp3_0000832320_0000957760.wav")}&
+	prompt_text=${encodeURIComponent("Yes, I know the quickest way. We can go to school, the shops, the zoo.")}&
+	prompt_language=en&text=${encodeURIComponent(text)}&text_language=en`;
+
+	const res = await fetch(url, {
+		method: 'GET'
+	})
+		.then(async (res) => {
+			if (!res.ok) throw await res.json();
+			return res;
+		})
+		.catch((err) => {
+			error = err.detail;
+			console.log(err);
+
+			return null;
+		});
+
+	if (error) {
+		throw error;
+	}
+
+	return res;
+};
+
 interface AvailableModelsResponse {
 	models: { name: string; id: string }[] | { id: string }[];
 }

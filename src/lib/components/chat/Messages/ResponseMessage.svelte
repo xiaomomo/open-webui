@@ -11,6 +11,7 @@
 
 	import { config, models, settings, user } from '$lib/stores';
 	import { synthesizeOpenAISpeech } from '$lib/apis/audio';
+	import { synthesizeSoVITSSpeech } from '$lib/apis/audio';
 	import { imageGenerations } from '$lib/apis/images';
 	import {
 		copyToClipboard as _copyToClipboard,
@@ -202,7 +203,21 @@
 			let lastPlayedAudioPromise = Promise.resolve(); // Initialize a promise that resolves immediately
 
 			for (const [idx, sentence] of messageContentParts.entries()) {
-				const res = await synthesizeOpenAISpeech(
+				// const res = await synthesizeOpenAISpeech(
+				// 	localStorage.token,
+				// 	$settings?.audio?.tts?.defaultVoice === $config.audio.tts.voice
+				// 		? ($settings?.audio?.tts?.voice ?? $config?.audio?.tts?.voice)
+				// 		: $config?.audio?.tts?.voice,
+				// 	sentence
+				// ).catch((error) => {
+				// 	console.error(error);
+				// 	toast.error(error);
+				//
+				// 	speaking = false;
+				// 	loadingSpeech = false;
+				// });
+
+				const res = await synthesizeSoVITSSpeech(
 					localStorage.token,
 					$settings?.audio?.tts?.defaultVoice === $config.audio.tts.voice
 						? ($settings?.audio?.tts?.voice ?? $config?.audio?.tts?.voice)
@@ -337,14 +352,18 @@
 		id="message-{message.id}"
 		dir={$settings.chatDirection}
 	>
+<!--	try img-->
+<!--		<ProfileImage-->
+<!--			src={model?.info?.meta?.profile_image_url ??-->
+<!--				($i18n.language === 'dg-DG' ? `/doge.png` : `${WEBUI_BASE_URL}/static/favicon.png`)}-->
+<!--		/>-->
 		<ProfileImage
-			src={model?.info?.meta?.profile_image_url ??
-				($i18n.language === 'dg-DG' ? `/doge.png` : `${WEBUI_BASE_URL}/static/favicon.png`)}
-		/>
+			src="/static/favicon.png" />
 
 		<div class="flex-auto w-0 pl-1">
 			<Name>
-				{model?.name ?? message.model}
+				<!--{model?.name ?? message.model}-->
+				{"Blippi"}
 
 				{#if message.timestamp}
 					<span
