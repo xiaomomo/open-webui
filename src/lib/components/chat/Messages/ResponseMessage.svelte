@@ -357,8 +357,9 @@
 <!--			src={model?.info?.meta?.profile_image_url ??-->
 <!--				($i18n.language === 'dg-DG' ? `/doge.png` : `${WEBUI_BASE_URL}/static/favicon.png`)}-->
 <!--		/>-->
+        <!--怎么监听点击？-->
 		<ProfileImage
-			src="/static/favicon.png" />
+			src="/static/favicon.png" animationSrc="/static/blippi_animation.png" speaking={speaking}/>
 
 		<div class="flex-auto w-0 pl-1">
 			<Name>

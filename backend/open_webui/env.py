@@ -252,6 +252,7 @@ if os.path.exists(f"{DATA_DIR}/ollama.db"):
 else:
     pass
 
+# 这里加载的数据库！
 DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{DATA_DIR}/webui.db")
 
 # Replace the postgres:// with postgresql://
