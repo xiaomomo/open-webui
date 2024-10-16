@@ -347,17 +347,14 @@
 </script>
 
 {#key message.id}
+<!--	<div class="">-->
+<!--		this is used for animation-->
+<!--	</div>-->
 	<div
 		class=" flex w-full message-{message.id}"
 		id="message-{message.id}"
 		dir={$settings.chatDirection}
 	>
-<!--	try img-->
-<!--		<ProfileImage-->
-<!--			src={model?.info?.meta?.profile_image_url ??-->
-<!--				($i18n.language === 'dg-DG' ? `/doge.png` : `${WEBUI_BASE_URL}/static/favicon.png`)}-->
-<!--		/>-->
-        <!--怎么监听点击？-->
 		<ProfileImage
 			src="/static/favicon.png" animationSrc="/static/blippi_animation.png" speaking={speaking}/>
 

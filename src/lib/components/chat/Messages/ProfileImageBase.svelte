@@ -7,6 +7,15 @@
     .animate-speaking {
             animation: bounce 1s infinite;
     }
+
+  @keyframes bounce {
+      0%, 100% {
+          transform: translateY(0);
+      }
+      50% {
+          transform: translateY(-10px);
+      }
+  }
 </style>
 
 <script lang="ts">
@@ -28,15 +37,7 @@
 			  src.startsWith('/')
 			? src
 			: `/user.png`}
-	class="{className} object-cover rounded-full -translate-y-[1px]"
+	class="{className} object-cover rounded-full -translate-y-[1px] {speaking ? 'animate-speaking' : 'blippi-animated'}"
 	alt="profile"
 	draggable="false"
 />
-
-<!-- Animated image based on speaking state -->
-{#if animationSrc !== ''}
-  <img
-    src={animationSrc}
-    class="{speaking ? 'animate-speaking' : 'blippi-animated'}"
-  />
-{/if}

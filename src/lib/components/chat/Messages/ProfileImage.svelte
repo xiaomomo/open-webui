@@ -9,5 +9,5 @@
 </script>
 
 <div class={`flex-shrink-0 ${($settings?.chatDirection ?? 'LTR') === 'LTR' ? 'mr-3' : 'ml-3'}`}>
-	<ProfileImageBase {src} {className} {animationSrc} speaking/>
+	<ProfileImageBase {src} {className} {animationSrc} speaking={speaking}/>
 </div>

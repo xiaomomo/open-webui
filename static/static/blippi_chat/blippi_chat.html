@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Kids Video Chat with Chat History</title>
+	<style>
+      body {
+          background: linear-gradient(135deg, #FFC1E3 0%, #FFF2F8 100%);
+          font-family: 'Bubblegum Sans', cursive;
+          margin: 0;
+          display: flex;
+          height: 100vh;
+      }
+      .container {
+          display: flex;
+          width: 100%;
+          height: 100%;
+      }
+      /* Video chat section, fixed at 1/2 of the width */
+      .video-chat {
+          flex-basis: 50%;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          padding: 10px;
+          background-color: #FFF0F5;
+      }
+      /* Fixed aspect ratio: 16:9 for video areas */
+      .video {
+          width: 90%;
+          position: relative;
+          padding-top: 56.25%; /* 16:9 aspect ratio (9/16 = 0.5625) */
+          margin-bottom: 20px;
+      }
+      .video-content {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: #FFF2F8;
+          border-radius: 20px;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+      }
+      /* Chat history section, fixed at 1/2 of the width */
+      .chat-section {
+          flex-basis: 50%;
+          background-color: #FFF2F8;
+          border-radius: 20px;
+          margin: 10px;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+      .chat-history {
+          flex: 1;
+          padding: 10px;
+          overflow-y: auto;
+          border-bottom: 2px solid #FFC1E3;
+      }
+      .message, .message.sender {
+          display: flex;
+          align-items: flex-start;
+          margin-bottom: 10px;
+      }
+      /* Align the messages */
+      .message {
+          justify-content: flex-start;
+      }
+      .message.sender {
+          justify-content: flex-end;
+      }
+      .avatar {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          margin-right: 10px;
+      }
+      .message.sender .avatar {
+          margin-right: 0;
+          margin-left: 10px;
+      }
+      .message-content {
+          background-color: #FFB6C1;
+          padding: 10px;
+          border-radius: 10px;
+          color: #fff;
+          font-size: 1.2em;
+          text-align: left;
+          max-width: 70%;
+      }
+      .message.sender .message-content {
+          background-color: #B3E5FC;
+          margin-left: 10px;
+      }
+      .nickname {
+          font-size: 0.9em;
+          font-weight: bold;
+          color: #333;
+          margin-bottom: 5px;
+      }
+      /* Input text area */
+      .input-area {
+          display: flex;
+          padding: 10px;
+          align-items: center;
+          background-color: #FFF2F8;
+          border-top: 2px solid #FFC1E3;
+      }
+      .input-area input {
+          width: 80%;
+          height: 40px;
+          border-radius: 15px;
+          border: 2px solid #FFB6C1;
+          padding-left: 10px;
+          font-size: 1em;
+          outline: none;
+      }
+      .input-area button {
+          background-color: #FFB6C1;
+          border: none;
+          border-radius: 50%;
+          width: 40px;
+          height: 40px;
+          font-size: 1.5em;
+          margin-left: 10px;
+          cursor: pointer;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          transition: background-color 0.3s ease;
+      }
+      .input-area button:hover {
+          background-color: #FF80AB;
+      }
+	</style>
+</head>
+<body>
+<div class="container">
+	<!-- Video chat section (1/2 of the width) -->
+	<div class="video-chat">
+		<!-- Kid 1 video area with fixed aspect ratio -->
+		<div class="video">
+			<div class="video-content">Kid 1 Video</div>
+		</div>
+		<!-- Kid 2 video area with fixed aspect ratio -->
+		<div class="video">
+			<div class="video-content">Kid 2 Video</div>
+		</div>
+	</div>
+
+	<!-- Chat section with history, avatars, and input (1/2 of the width) -->
+	<div class="chat-section">
+		<!-- Chat history -->
+		<div class="chat-history">
+			<!-- Kid 1's message on the left -->
+			<div class="message">
+				<img class="avatar" src="https://via.placeholder.com/40" alt="Kid 1 Avatar">
+				<div class="message-content">
+					<div class="nickname">Kid 1</div>
+					Hi there!
+				</div>
+			</div>
+
+			<!-- Kid 2's message on the right -->
+			<div class="message sender">
+				<div class="message-content">
+					<div class="nickname">Kid 2</div>
+					Hello!
+				</div>
+				<img class="avatar" src="https://via.placeholder.com/40/FFC1E3" alt="Kid 2 Avatar">
+			</div>
+
+			<!-- Kid 1's message on the left -->
+			<div class="message">
+				<img class="avatar" src="https://via.placeholder.com/40" alt="Kid 1 Avatar">
+				<div class="message-content">
+					<div class="nickname">Kid 1</div>
+					How are you?
+				</div>
+			</div>
+
+			<!-- Kid 2's message on the right -->
+			<div class="message sender">
+				<div class="message-content">
+					<div class="nickname">Kid 2</div>
+					I'm good, thanks!
+				</div>
+				<img class="avatar" src="https://via.placeholder.com/40/FFC1E3" alt="Kid 2 Avatar">
+			</div>
+		</div>
+
+		<!-- Input area -->
+		<div class="input-area">
+			<input type="text" placeholder="Type here..." />
+			<button>😊</button>
+		</div>
+	</div>
+</div>
+</body>
+</html>
