@@ -96,6 +96,14 @@
 						dispatch('update');
 					}
 				}}
+				on:play_blippi_animation={async (e) => {
+					console.log("Message play_blippi_animation");
+					dispatch('play_blippi_animation');
+				}}
+				on:pause_blippi_animation={() => {
+								console.log("Message pause_blippi_animation");
+								dispatch('pause_blippi_animation');
+							}}
 				{readOnly}
 			/>
 		{:else}

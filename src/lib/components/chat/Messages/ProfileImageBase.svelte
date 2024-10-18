@@ -37,7 +37,7 @@
 			  src.startsWith('/')
 			? src
 			: `/user.png`}
-	class="{className} object-cover rounded-full -translate-y-[1px] {speaking ? 'animate-speaking' : 'blippi-animated'}"
+	class="{className} object-cover rounded-full -translate-y-[1px] "
 	alt="profile"
 	draggable="false"
 />

@@ -1,5 +1,8 @@
 <script>
 	import { onMount } from 'svelte';
+	import {getChatById} from '$lib/apis/chats';
+	import { generateChatCompletion } from '$lib/apis/ollama';
+	import { goto } from '$app/navigation';
 
 	let videoChatData = {
 		kid1: { name: 'Kid 1', avatar: 'https://via.placeholder.com/40' },
@@ -12,9 +15,23 @@
 	// Fetch chat history on component mount
 	async function fetchChatHistory() {
 		try {
-			const response = await fetch('/get_history_msg');
-			const data = await response.json();
-			videoChatData.messages = data.messages;
+			const data = await getChatById(localStorage.token, "7736fc63-0d36-4d0a-a9a3-e1e475012a8f").catch(async (error) => {
+				await goto('/');
+				return null;
+			});
+
+			// 提取历史消息并按顺序加入 messages 列表
+			const messagesObj = data.chat.history.messages;
+			const messagesArray = Object.values(messagesObj);
+
+			// 将消息按时间戳排序
+			messagesArray.sort((a, b) => a.timestamp - b.timestamp);
+
+			// 将消息推入 videoChatData.messages
+			videoChatData.messages = messagesArray.map(msg => ({
+				sender: msg.role === 'user' ? 'kid1' : 'kid2',
+				text: msg.content
+			}));
 		} catch (error) {
 			console.error("Error fetching chat history:", error);
 		}
@@ -22,6 +39,7 @@
 
 	// Send a new message
 	async function sendMessage() {
+		//can use simple api here
 		if (!newMessage.trim()) return; // Prevent sending empty messages
 		loading = true;
 
@@ -68,7 +86,41 @@
 	onMount(() => {
 		fetchChatHistory();
 	});
+
+
+	let kid1VideoElement; // 用于获取 Kid 1 的视频元素引用
+	let kid2VideoElement; // 用于获取 Kid 2 的视频元素引用
+
+	// 模拟视频的来源链接 (可以替换成实际的视频 URL)
+	let kid1VideoSrc = '/static/blippi_video.mov';
+	let kid2VideoSrc = 'https://www.w3schools.com/html/mov_bbb.mp4';
+
+	// 控制视频播放
+	function playKid1Video() {
+		if (kid1VideoElement) {
+			kid1VideoElement.play();
+		}
+	}
+
+	function pauseKid1Video() {
+		if (kid1VideoElement) {
+			kid1VideoElement.pause();
+		}
+	}
+
+	function playKid2Video() {
+		if (kid2VideoElement) {
+			kid2VideoElement.play();
+		}
+	}
+
+	function pauseKid2Video() {
+		if (kid2VideoElement) {
+			kid2VideoElement.pause();
+		}
+	}
 </script>
+
 
 <!-- Video chat layout -->
 <div class="container">
@@ -76,12 +128,19 @@
 	<div class="video-chat">
 		<div class="video">
 			<div class="video-content">
-				<p>{videoChatData.kid1.name}'s Video</p>
+				<!-- Kid 1 视频播放器 -->
+				<video bind:this={kid1VideoElement} src={kid1VideoSrc} muted playsinline></video>
+				<button on:click={playKid1Video}>Play Kid 1 Video</button>
+				<button on:click={pauseKid1Video}>Pause Kid 1 Video</button>
 			</div>
 		</div>
+
 		<div class="video">
 			<div class="video-content">
-				<p>{videoChatData.kid2.name}'s Video</p>
+				<!-- Kid 2 视频播放器 -->
+				<video bind:this={kid2VideoElement} src={kid2VideoSrc} muted playsinline></video>
+<!--				<button on:click={playKid2Video}>Play Kid 2 Video</button>-->
+<!--				<button on:click={pauseKid2Video}>Pause Kid 2 Video</button>-->
 			</div>
 		</div>
 	</div>
@@ -136,7 +195,7 @@
     .video {
         width: 90%;
         position: relative;
-        padding-top: 56.25%;
+        padding-top: 56.25%; /* 16:9 aspect ratio */
         margin-bottom: 20px;
     }
     .video-content {
@@ -148,9 +207,29 @@
         background-color: #FFF2F8;
         border-radius: 20px;
         display: flex;
+        flex-direction: column;
         justify-content: center;
         align-items: center;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    video {
+        width: 100%;
+        height: 100%;
+        border-radius: 20px;
+        object-fit: cover;
+    }
+    button {
+        margin-top: 10px;
+        padding: 10px;
+        background-color: #FFB6C1;
+        border: none;
+        border-radius: 10px;
+        color: white;
+        font-size: 1em;
+        cursor: pointer;
+    }
+    button:hover {
+        background-color: #FF69B4;
     }
     .chat-section {
         flex-basis: 50%;

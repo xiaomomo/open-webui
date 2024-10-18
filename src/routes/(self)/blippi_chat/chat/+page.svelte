@@ -1,5 +1,5 @@
 <script>
-	import VideoChat from './routes/VideoChat.svelte';
+	import VideoChat from './VideoChat.svelte';
 </script>
 
 <main>
@@ -15,5 +15,6 @@
         display: flex;
         justify-content: center;
         align-items: center;
+				width: 100%;
     }
 </style>

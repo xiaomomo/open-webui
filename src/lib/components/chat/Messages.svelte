@@ -409,6 +409,14 @@
 									}, 100);
 								}
 							}}
+							on:play_blippi_animation={() => {
+								console.log("Messages play_blippi_animation");
+								dispatch('play_blippi_animation');
+							}}
+							on:pause_blippi_animation={() => {
+								console.log("Messages pause_blippi_animation");
+								dispatch('pause_blippi_animation');
+							}}
 						/>
 					{/each}
 				</div>

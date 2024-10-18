@@ -136,13 +136,14 @@
 			if (!audio) {
 				return res();
 			}
-
+			// 怎么在这里触发父亲函数？
 			audio.play();
 			audio.onended = async () => {
 				await new Promise((r) => setTimeout(r, 300));
 
 				if (Object.keys(audioParts).length - 1 === idx) {
 					speaking = false;
+					dispatch('pause_blippi_animation');
 				}
 
 				res();
@@ -239,6 +240,8 @@
 
 					audioParts[idx] = audio;
 					loadingSpeech = false;
+					dispatch('play_blippi_animation', { });
+					console.log("responseMessage play_blippi_animation");
 					lastPlayedAudioPromise = lastPlayedAudioPromise.then(() => playAudio(idx));
 				}
 			}

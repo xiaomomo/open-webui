@@ -1884,6 +1884,22 @@
 			}
 		}
 	};
+
+	// 	video
+	let kid1VideoElement; // 用于获取 Kid 1 的视频元素引用
+	// 控制视频播放
+	function playKid1Video() {
+		kid1VideoElement.play();
+	}
+
+	function pauseKid1Video() {
+		kid1VideoElement.pause();
+	}
+
+	// 当视频播放结束时，再次播放，实现循环播放
+	function handleVideoEnd() {
+		kid1VideoElement.play();
+	}
 </script>
 
 <svelte:head>
@@ -1943,7 +1959,7 @@
 		/>
 
 		<PaneGroup direction="horizontal" class="w-full h-full">
-			<Pane defaultSize={50} class="h-full flex w-full relative">
+			<Pane defaultSize={50} class="h-full flex w-full relative blippi-chat-container" style="background-color: #FFF2F8;">
 				{#if $banners.length > 0 && !history.currentId && !$chatId && selectedModels.length <= 1}
 					<div class="absolute top-12 left-0 right-0 w-full z-30">
 						<div class=" flex flex-col gap-1 w-full">
@@ -1982,6 +1998,7 @@
 							}}
 						>
 							<div class=" h-full w-full flex flex-col">
+								<!--									这里加函数-->
 								<Messages
 									chatId={$chatId}
 									bind:history
@@ -2025,6 +2042,13 @@
 											await tick();
 											await sendPrompt(userPrompt, userMessageId);
 										}
+									}}
+									on:play_blippi_animation={(e) => {
+										console.log("chat play_blippi_animation");
+										playKid1Video();
+									}}
+									on:pause_blippi_animation={(e) => {
+										pauseKid1Video();
 									}}
 								/>
 							</div>
@@ -2096,6 +2120,12 @@
 					{/if}
 				</div>
 			</Pane>
+			<div class="video" style="background-color: #FFF2F8;">
+				<div class="video-content">
+					<!-- Kid 1 视频播放器 -->
+					<video bind:this={kid1VideoElement} src='/static/blippi_animation_3.mov' muted playsinline on:ended={handleVideoEnd}></video>
+				</div>
+			</div>
 
 			<ChatControls
 				bind:history
@@ -2120,3 +2150,31 @@
 		</PaneGroup>
 	</div>
 {/if}
+
+<style>
+
+    .video {
+        width: 20%;
+        position: relative;
+        padding-top: 56.25%; /* 16:9 aspect ratio */
+        margin-bottom: 0px;
+    }
+    .video-content {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        background-color: #FFF2F8;
+        border-radius: 20px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    video {
+        width: 100%;
+        height: 100%;
+        border-radius: 20px;
+        object-fit: cover;
+    }
+</style>
