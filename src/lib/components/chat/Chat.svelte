@@ -1889,16 +1889,16 @@
 	let kid1VideoElement; // 用于获取 Kid 1 的视频元素引用
 	// 控制视频播放
 	function playKid1Video() {
-		kid1VideoElement.play();
+		// kid1VideoElement.play();
 	}
 
 	function pauseKid1Video() {
-		kid1VideoElement.pause();
+		// kid1VideoElement.pause();
 	}
 
 	// 当视频播放结束时，再次播放，实现循环播放
 	function handleVideoEnd() {
-		kid1VideoElement.play();
+		// kid1VideoElement.play();
 	}
 </script>
 
@@ -2120,12 +2120,12 @@
 					{/if}
 				</div>
 			</Pane>
-			<div class="video" style="background-color: #FFF2F8;">
-				<div class="video-content">
-					<!-- Kid 1 视频播放器 -->
-					<video bind:this={kid1VideoElement} src='/static/blippi_animation_3.mov' muted playsinline on:ended={handleVideoEnd}></video>
-				</div>
-			</div>
+<!--			<div class="video" style="background-color: #FFF2F8;">-->
+<!--				<div class="video-content">-->
+<!--					&lt;!&ndash; Kid 1 视频播放器 &ndash;&gt;-->
+<!--					<video bind:this={kid1VideoElement} src='/static/blippi_animation_3.mov' muted playsinline on:ended={handleVideoEnd}></video>-->
+<!--				</div>-->
+<!--			</div>-->
 
 			<ChatControls
 				bind:history

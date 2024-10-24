@@ -8,6 +8,7 @@
 	import Modal from '../common/Modal.svelte';
 	import Controls from './Controls/Controls.svelte';
 	import CallOverlay from './MessageInput/CallOverlay.svelte';
+	import CallBlippi from './MessageInput/CallBlippi.svelte';
 	import Drawer from '../common/Drawer.svelte';
 	import Overview from './Overview.svelte';
 	import { Pane, PaneResizer } from 'paneforge';
@@ -116,7 +117,19 @@
 						<div
 							class=" h-full max-h-[100dvh] bg-white text-gray-700 dark:bg-black dark:text-gray-300 flex justify-center"
 						>
-							<CallOverlay
+<!--							<CallOverlay-->
+<!--								bind:files-->
+<!--								{submitPrompt}-->
+<!--								{stopResponse}-->
+<!--								{modelId}-->
+<!--								{chatId}-->
+<!--								{eventTarget}-->
+<!--								on:close={() => {-->
+<!--									showControls.set(false);-->
+<!--								}}-->
+<!--							/>-->
+
+							<CallBlippi
 								bind:files
 								{submitPrompt}
 								{stopResponse}
@@ -191,7 +204,19 @@
 					>
 						{#if $showCallOverlay}
 							<div class="w-full h-full flex justify-center">
-								<CallOverlay
+<!--								<CallOverlay-->
+<!--									bind:files-->
+<!--									{submitPrompt}-->
+<!--									{stopResponse}-->
+<!--									{modelId}-->
+<!--									{chatId}-->
+<!--									{eventTarget}-->
+<!--									on:close={() => {-->
+<!--										showControls.set(false);-->
+<!--									}}-->
+<!--								/>-->
+
+								<CallBlippi
 									bind:files
 									{submitPrompt}
 									{stopResponse}
@@ -199,8 +224,8 @@
 									{chatId}
 									{eventTarget}
 									on:close={() => {
-										showControls.set(false);
-									}}
+									showControls.set(false);
+								}}
 								/>
 							</div>
 						{:else if $showArtifacts}
