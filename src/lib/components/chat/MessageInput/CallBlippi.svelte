@@ -780,7 +780,7 @@
 <!--						playsinline-->
 <!--					/>-->
 
-					<video id="camera-feed" bind:this={blippiVideoElement} src='/static/blippi_animation_3.mov'
+					<video id="camera-feed" bind:this={blippiVideoElement} src='/static/blippi_animation4.mov'
 								 class="rounded-2xl h-full min-w-full object-cover object-center"
 								 autoplay
 								 muted playsinline ></video>
