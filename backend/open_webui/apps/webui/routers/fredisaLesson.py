@@ -13,7 +13,7 @@ router = APIRouter()
 ############################
 
 @router.get("/fredisalessons", response_model=list[FredisaLessonModel])
-async def get_fredisa_lessons(user=Depends(get_verified_user)):
+async def get_fredisa_lessons():
     return FredisaLessons.get_all_lessons()
 
 
