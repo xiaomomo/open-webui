@@ -13,18 +13,18 @@ import re
 
 class Filter:
     class Valves(BaseModel):
-        priority: int = Field(
-            default=0, description="Priority level for the filter operations."
-        )
-        max_turns: int = Field(
-            default=8, description="Maximum allowable conversation turns for a user."
-        )
+#         priority: int = Field(
+#             default=0, description="Priority level for the filter operations."
+#         )
+#         max_turns: int = Field(
+#             default=8, description="Maximum allowable conversation turns for a user."
+#         )
         pass
 
     class UserValves(BaseModel):
-        max_turns: int = Field(
-            default=4, description="Maximum allowable conversation turns for a user."
-        )
+#         max_turns: int = Field(
+#             default=4, description="Maximum allowable conversation turns for a user."
+#         )
         pass
 
     def __init__(self):
@@ -46,14 +46,14 @@ class Filter:
         print(f"inlet:body:{body}")
         print(f"inlet:user:{__user__}")
 
-        if __user__.get("role", "admin") in ["user", "admin"]:
-            messages = body.get("messages", [])
-
-            max_turns = min(__user__["valves"].max_turns, self.valves.max_turns)
-            if len(messages) > max_turns:
-                raise Exception(
-                    f"Conversation turn limit exceeded. Max turns: {max_turns}"
-                )
+#         if __user__.get("role", "admin") in ["user", "admin"]:
+#             messages = body.get("messages", [])
+#
+#             max_turns = min(__user__["valves"].max_turns, self.valves.max_turns)
+#             if len(messages) > max_turns:
+#                 raise Exception(
+#                     f"Conversation turn limit exceeded. Max turns: {max_turns}"
+#                 )
 
         return body
 
