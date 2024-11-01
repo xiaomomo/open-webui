@@ -34,6 +34,7 @@ from open_webui.utils.payload import (
 )
 
 from open_webui.utils.utils import get_admin_user, get_verified_user
+import re
 
 log = logging.getLogger(__name__)
 log.setLevel(SRC_LOG_LEVELS["OPENAI"])
@@ -369,6 +370,24 @@ async def get_models(url_idx: Optional[int] = None, user=Depends(get_verified_us
             )
 
 
+def lowercaseContent(r):
+    print("origin_content:"+r.content)
+    origin_content = r.content
+    # 使用正则表达式将内容按单词和非单词字符分割
+    tokens = re.findall(r'\b\w+\b|\W', origin_content)
+    lowercase_tokens = []
+
+    for token in tokens:
+        if token.isupper():
+            lowercase_tokens.append(token.lower())
+        else:
+            lowercase_tokens.append(token)
+
+    # 将处理后的令牌重新拼接成字符串
+    lowercase = ''.join(lowercase_tokens)
+    r.content = lowercase
+    print("lowercase content:"+r.content)
+
 @app.post("/chat/completions")
 @app.post("/chat/completions/{url_idx}")
 async def generate_chat_completion(
@@ -376,6 +395,7 @@ async def generate_chat_completion(
     url_idx: Optional[int] = None,
     user=Depends(get_verified_user),
 ):
+    print("generate_chat_completion generate_chat_completion")
     idx = 0
     payload = {**form_data}
 
@@ -452,6 +472,8 @@ async def generate_chat_completion(
             data=payload,
             headers=headers,
         )
+        # 把结果的全大写大词改成小写的
+        lowercaseContent(r)
 
         # Check if response is SSE
         if "text/event-stream" in r.headers.get("Content-Type", ""):
