@@ -32,7 +32,7 @@
 	let assistantSpeaking = false;
 
 	let emoji = null;
-	let camera = false;
+	let camera = true;//改成默认true
 	let cameraStream = null;
 
 	let chatStreaming = false;
@@ -782,7 +782,6 @@
 
 					<video id="camera-feed" bind:this={blippiVideoElement} src='/static/blippi_animation4.mov'
 								 class="rounded-2xl h-full min-w-full object-cover object-center"
-								 autoplay
 								 muted playsinline ></video>
 
 

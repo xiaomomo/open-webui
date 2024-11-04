@@ -1,6 +1,10 @@
 <script>
 	import { currentPosition, completedLevels } from '../../stores/courseStore';
 	import { spring } from 'svelte/motion';
+	import { createNewChat, getChatList } from '$lib/apis/chats';
+	import { chatId, chats, currentChatPage } from '$lib/stores';
+	import { v4 as uuidv4 } from 'uuid';
+	import { tick } from 'svelte';
 
 	export let course;
 	export let index;
@@ -45,10 +49,74 @@
 
 	const stars = generateStars();
 
-	const goChat = () => {
-		//todo 传入内容啊,怎么交互到chat里？
-		// create a chat and start it
+	let history = {
+		messages: {},
+		currentId: null
+	};
+
+	function initFirstMsg() {
+		// Create user message
+		let userMessageId = uuidv4();
+		let userMessage = {
+			id: userMessageId,
+			parentId:  null,
+			childrenIds: [],
+			role: 'user',
+			content: "abcdef",//todo 这里构建聊天内容，后面再改
+			files: undefined,
+			timestamp: Math.floor(Date.now() / 1000), // Unix epoch
+			models: ["llama3:8b"]
+		};
+
+		// Add message to history and Set currentId to messageId
+		history.messages[userMessageId] = userMessage;
+		history.currentId = userMessageId;
+	}
+
+	const goChat = async () => {
 		console.log("go chat!")
+		// create a chat and start it
+		// initFirstMsg()
+		// let chat = await createNewChat(localStorage.token, {
+		// 	id: $chatId,
+		// 	title: 'New Chat',
+		// 	models: ["llama3:8b"],
+		// 	system: undefined,
+		// 	params: {},
+		// 	history: history,
+		// 	tags: [],
+		// 	timestamp: Date.now()
+		// });
+		// first msg!
+		// 导航到新的聊天页面
+
+		let q = `You are Blippi,  You are a senior children's English educator known for your engaging and energetic teaching style. making the learning experience fun and interactive.
+				You're here to conduct a one-on-one English lesson with a 6-year-old child, her name is Yaya, she already can speak and listen english, Now need to find some more situations to speak more..
+				You've had a few classes together and know each other pretty well.
+				It's important: You are teaching her on the phone.
+
+				Your task is to teach this child basic English vocabulary and simple sentence structures over the course of ten minutes. Here are some key points to focus on:
+
+				- Begin with greetings and introductions.
+				- Utilize fun, colorful visuals and interactive questions to engage the child.
+				- Introduce 5 new vocabulary words related to animals and their sounds.
+				- Encourage the child to practice saying these words and making the corresponding animal sounds.
+				- Use simple sentences that incorporate the new vocabulary.
+				- Include a fun closing activity, such as singing a short song or playing a quick game related to the lesson.
+
+				here is your Course outline:
+					<outline>
+						${course.content}
+					</outline>
+
+				It's important: You are teaching her on the phone.
+				Now, please start your conversation.  and wait yaya's answer
+				`;
+
+		let encodeQ = encodeURIComponent(q);
+		console.log(`http://localhost:5173/?model=llama3:8b&q=${encodeQ}&callOverlay=true&call=true`)
+		window.location.href = `http://localhost:5173/?model=llama3:8b&q=${encodeQ}&callOverlay=true&call=true`;
+
 	};
 
 </script>

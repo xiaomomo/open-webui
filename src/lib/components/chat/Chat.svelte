@@ -263,6 +263,7 @@
 		if (!$chatId) {
 			chatIdUnsubscriber = chatId.subscribe(async (value) => {
 				if (!value) {
+					// test page layout
 					await initNewChat();
 				}
 			});
@@ -314,6 +315,7 @@
 
 	const initNewChat = async () => {
 		await showControls.set(false);
+		let callOverlay = $page.url.searchParams.get('callOverlay') ?? false;//todo 这里好像不对
 		await showCallOverlay.set(false);
 		await showOverview.set(false);
 		await showArtifacts.set(false);
@@ -753,7 +755,7 @@
 		}
 
 		let _responses: string[] = [];
-		// If modelId is provided, use it, else use selected model
+		// If modelId is provided, use it, else use selected model11111111
 		let selectedModelIds = modelId
 			? [modelId]
 			: atSelectedModel !== undefined
