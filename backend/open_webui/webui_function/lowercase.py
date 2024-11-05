@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 import re
 
-
+# 这个对音频无效，因为页面输出的就先是纯大写了。可以给底层或者页面，需要思考下。
 class Filter:
     class Valves(BaseModel):
 #         priority: int = Field(

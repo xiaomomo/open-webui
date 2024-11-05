@@ -387,12 +387,14 @@
 					}
 				}
 				//请求tts，然后再play
+				// 大写单词改小写！11111
+				let lowerContent = lowercaseContent(content);
 				const res = await synthesizeSoVITSSpeech(
 					localStorage.token,
 					$settings?.audio?.tts?.defaultVoice === $config.audio.tts.voice
 						? ($settings?.audio?.tts?.voice ?? $config?.audio?.tts?.voice)
 						: $config?.audio?.tts?.voice,
-					content
+					lowerContent
 				).catch((error) => {
 					console.log('synthesizeSoVITSSpeech error content:' + content);
 					console.error(error);
@@ -414,6 +416,25 @@
 
 		return audioCache.get(content);
 	};
+
+	function lowercaseContent(content) {
+		let originContent = content;
+		// 使用正则表达式将内容按单词和非单词字符分割
+		let tokens = originContent.match(/\b\w+\b|\W/g);
+		let lowercaseTokens = [];
+
+		for (let token of tokens) {
+			if (token === token.toUpperCase()) {
+				lowercaseTokens.push(token.toLowerCase());
+			} else {
+				lowercaseTokens.push(token);
+			}
+		}
+
+		// 将处理后的令牌重新拼接成字符串
+		return lowercaseTokens.join('');
+	}
+
 
 	let messages = {};
 

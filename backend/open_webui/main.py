@@ -1105,7 +1105,7 @@ async def generate_chat_completions(form_data: dict, user=Depends(get_verified_u
     else:
         return await generate_openai_chat_completion(form_data, user=user)
 
-
+# 是这儿吗？这个是走outlet的，和function效果一致
 @app.post("/api/chat/completed")
 async def chat_completed(form_data: dict, user=Depends(get_verified_user)):
     data = form_data
