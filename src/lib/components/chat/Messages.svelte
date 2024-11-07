@@ -308,8 +308,152 @@
 		// Update the chat
 		await updateChatHistory();
 	};
+
+	//todo 怎么根据message的交互触发这些事件
+	let showChatContainer = true;
+	let showConfirmation = false;
+
+	function handleConfirm() {
+		showConfirmation = true;
+		setTimeout(() => {
+			showConfirmation = false;
+		}, 3000);
+	}
+
+	function handleCancel() {
+		showChatContainer = false;
+	}
 </script>
 
+<style>
+    .lesson-question-tip {
+        background-color: #fff0f6;
+        width: 80%;
+        max-width: 600px;
+        margin: 40px auto;
+        padding: 25px;
+        border-radius: 25px;
+        text-align: center;
+        font-family: 'Jost', sans-serif;
+        box-shadow: 0 6px 20px rgba(255, 102, 178, 0.3);
+        animation: slide-in 0.5s ease-out;
+    }
+
+    @keyframes slide-in {
+        0% {
+            transform: translateY(-20%);
+            opacity: 0;
+        }
+        100% {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    .lesson-question-tip-message {
+        font-size: 28px;
+        margin-bottom: 25px;
+        color: #ff66b2;
+        font-weight: bold;
+        border: 3px dashed #ff66b2;
+        padding: 12px;
+        border-radius: 20px;
+        background-color: #fff;
+    }
+
+    .lesson-question-tip-button-container {
+        display: flex;
+        justify-content: center;
+        margin-top: 25px;
+    }
+
+    .lesson-question-tip-button {
+        background-color: #ff66b2;
+        border: none;
+        color: white;
+        padding: 12px 26px;
+        border-radius: 20px;
+        font-size: 20px;
+        cursor: pointer;
+        margin: 0 8px;
+        transition: background-color 0.3s, transform 0.2s;
+        box-shadow: 0 4px 10px rgba(255, 102, 178, 0.4);
+    }
+
+		/**贴纸样式**/
+    .confirmation-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: rgba(255, 255, 255, 0.5);
+        animation: firework-burst 1s ease-out forwards;
+        opacity: 0;
+    }
+
+    .firework-burst {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .firework-spark {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        background-color: #ff00ff;
+        border-radius: 50%;
+        animation: firework-spark 1s ease-out forwards;
+    }
+
+    .firework-spark:nth-child(1) {
+        top: 50%;
+        left: 50%;
+        animation-delay: 0.1s;
+    }
+
+    .firework-spark:nth-child(2) {
+        top: 50%;
+        left: 50%;
+        animation-delay: 0.2s;
+    }
+
+    /* 省略剩余 8 个 .firework-spark 的样式 */
+
+    @keyframes firework-burst {
+        0% {
+            transform: scale(0);
+            opacity: 1;
+        }
+        50% {
+            transform: scale(1.2);
+            opacity: 1;
+        }
+        100% {
+            transform: scale(2);
+            opacity: 0;
+        }
+    }
+
+    @keyframes firework-spark {
+        0% {
+            transform: translate(-50%, -50%) scale(0);
+        }
+        50% {
+            transform: translate(-50%, -150%) scale(1);
+        }
+        100% {
+            transform: translate(-50%, -300%) scale(0);
+        }
+    }
+		/**明天继续让AI增强**/
+
+</style>
 <div class="h-full flex pt-8">
 	{#if Object.keys(history?.messages ?? {}).length == 0}
 		<ChatPlaceholder
@@ -419,6 +563,34 @@
 							}}
 						/>
 					{/each}
+
+					{#if showChatContainer}
+						<div class="lesson-question-tip">
+							<div class="lesson-question-tip-message">Let's do a test together</div>
+							<div class="lesson-question-tip-button-container">
+								<button class="lesson-question-tip-button" on:click={handleConfirm}>Confirm</button>
+								<button class="lesson-question-tip-button" on:click={handleCancel}>Cancel</button>
+							</div>
+						</div>
+					{/if}
+
+					{#if showConfirmation}
+						<div class="confirmation-container">
+							<div class="firework-burst">
+								<div class="firework-spark"></div>
+								<div class="firework-spark"></div>
+								<div class="firework-spark"></div>
+								<div class="firework-spark"></div>
+								<div class="firework-spark"></div>
+								<div class="firework-spark"></div>
+								<div class="firework-spark"></div>
+								<div class="firework-spark"></div>
+								<div class="firework-spark"></div>
+								<div class="firework-spark"></div>
+							</div>
+						</div>
+					{/if}
+
 				</div>
 				<div class="pb-12" />
 				{#if bottomPadding}

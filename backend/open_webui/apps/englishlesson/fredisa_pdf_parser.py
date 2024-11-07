@@ -11,8 +11,11 @@ import sys
 import time
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../')))
+from open_webui.apps.englishlesson.workflows.struct_lesson.struct_lesson_content import StructLessonWorkflow
 from open_webui.apps.webui.models.fredisalesson import FredisaLessonForm, FredisaLessonModel, FredisaLessons
 
+
+import asyncio
 
 def extract_text_from_pdf(pdf_path):
     resource_manager = PDFResourceManager()
@@ -51,23 +54,31 @@ def process_pdf(input_path):
         print(f"处理出错: {str(e)}")
         return None
 
-def save_unit(item):
-    # 如果item长度小于100，直接返回
-    if len(item) < 100:
+async def save_unit(item):
+    # 如果item长度小于50，直接返回
+    if len(item) < 50:
         return
     # save item to sqlite
-    fredisaLesson = FredisaLessonForm(unit=item.split('\n')[0], content=item)
+    fredisaLesson = FredisaLessonForm(unit=item.split('\n')[0], content=item, lesson_json="")
     fredisaLesson.content = item
     fredisaLesson.unit = item.split('\n')[0]
+    # 调用工作流结构化lesson
+    w = StructLessonWorkflow(timeout=40, verbose=False)
+    lesson_json = await w.run(origin_content=fredisaLesson.content)
+    print(lesson_json)
+    fredisaLesson.lesson_json = lesson_json
     lesson = FredisaLessons.insert_new_lesson(fredisaLesson)
+    # 调用工作流结构化 question
     time.sleep(1)
     return lesson
 
 
-def savePdfContent(text_content):
+
+async def savePdfContent(text_content):
+    # todo 这里要用更好的截取办法，去掉脏数据
     units = [unit.strip() for unit in text_content.split("Unit ") if unit.strip()]
     for item in units:
-        save_unit(item)
+        await save_unit(item)
 
 
 if __name__ == "__main__":
@@ -80,7 +91,7 @@ if __name__ == "__main__":
             text_content = '\n'.join(line for line in text_content.splitlines() if line.strip())
             print("提取的文本内容:")
             print(text_content)
+            asyncio.run(savePdfContent(text_content))
 
-            savePdfContent(text_content)
     else:
         print("输入文件不存在")

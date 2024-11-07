@@ -6,8 +6,8 @@ from llama_index.core.workflow import (
     Event,
 )
 
-from schemas import *
-from prompts import *
+from .schemas import *
+from .prompts import *
 from llama_index.llms.ollama import Ollama
 import json
 
@@ -38,7 +38,7 @@ class SaveStructLessonEvent(Event):
     lessonUnit: LessonUnit
 
 
-class MyWorkflow(Workflow):
+class StructLessonWorkflow(Workflow):
 
     @step
     async def step_start(self, ev: StartEvent) -> StartStructLessonEvent:
@@ -87,8 +87,9 @@ class MyWorkflow(Workflow):
 
     @step
     async def step_save_content(self, ev: SaveStructLessonEvent) -> StopEvent:
-        print(f"step_save_content response: {ev.lessonUnit}")
-        return StopEvent(result="Workflow complete.")
+        json_str = json.dumps(ev.lessonUnit.to_dict(), indent=4)
+        print(f"step_save_content response: {json_str}")
+        return StopEvent(result=json_str)
 
 
     def parse_lesson_unit(self, responseText: str) -> LessonUnit:
@@ -148,9 +149,9 @@ More ways to describe animals
 |. Tigers and zebras have stripes.
 2. Horses do not have stripes but zebras do. 3. A lion's roar sounds scary.
     '''
-    w = MyWorkflow(timeout=40, verbose=False)
+    w = StructLessonWorkflow(timeout=40, verbose=False)
     result = await w.run(origin_content=origin_content)
-    print(result)
+    print("1111111:"+result)
 
 
 if __name__ == "__main__":

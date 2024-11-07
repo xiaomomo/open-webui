@@ -14,12 +14,10 @@ import json
 llm = Ollama(model="llama3:8b", request_timeout=120.0)
 
 
-# workflow step:
-#     1. start
-#     2. generate question
-#     3. be json
-#     4. try to bean
-#     5. save question
+# workflow step: 迟点做这个
+#     1. summary chat content
+#     2. generate a pic about student and little-pony with this lesson unit
+
 
 class StartJsonLessonEvent(Event):
     jsonUnitContent: str

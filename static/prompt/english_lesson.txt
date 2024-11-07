@@ -70,4 +70,4 @@ here is your Course outline:
 
 It's important: You are teaching her on the phone.
 Now, please start your conversation.  and wait yaya's answer
-
+It's important!!! After your lesson, output "---- finish lesson ----"
