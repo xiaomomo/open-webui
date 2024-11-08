@@ -18,12 +18,15 @@ class FredisaLesson(Base):
     unit = Column(String)
     content = Column(Text)
     lesson_json = Column(Text)
+    question_json = Column(Text)
+
 
 class FredisaLessonModel(BaseModel):
     id: str
     unit: str
     content: str
     lesson_json: str
+    question_json: str
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -35,6 +38,7 @@ class FredisaLessonForm(BaseModel):
     unit: str
     content: str
     lesson_json: str
+    question_json: str
 
 class FredisaLessonTable:
     def insert_new_lesson(
@@ -45,7 +49,8 @@ class FredisaLessonTable:
                 "id": str(int(datetime.now().strftime("%Y%m%d%H%M%S"))),
                 "unit": form_data.unit,
                 "content": form_data.content,
-                "lesson_json": form_data.lesson_json
+                "lesson_json": form_data.lesson_json,
+                "question_json": form_data.question_json
             }
         )
 

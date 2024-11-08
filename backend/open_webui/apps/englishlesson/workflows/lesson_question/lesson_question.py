@@ -7,7 +7,7 @@ from llama_index.core.workflow import (
     Context,
 )
 
-from prompts import *
+from .prompts import *
 from llama_index.llms.ollama import Ollama
 import json
 
@@ -77,7 +77,7 @@ class LessonQuestionWorkflow(Workflow):
     @step
     async def step_save_question(self, ev: SaveQuestionEvent) -> StopEvent:
         print(f"step_save_question response: {ev.question_json}")
-        return StopEvent(result="Workflow complete.")
+        return StopEvent(result=ev.question_json)
 
 async def main():
     origin_content = '''

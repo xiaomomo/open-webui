@@ -41,7 +41,7 @@ async def create_new_fredisa_lesson(form_data: FredisaLessonForm, user=Depends(g
 @router.get("/fredisalessons/{lesson_id}", response_model=Optional[FredisaLessonModel])
 async def get_fredisa_lesson_by_id(lesson_id: str):
     lesson = FredisaLessons.get_lesson_by_id(lesson_id)
-
+    print(f"test get_fredisa_lesson_by_id lesson:{lesson}")
     if lesson:
         return lesson
     else:

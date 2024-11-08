@@ -97,7 +97,7 @@ Keep the activities short and engaging to ensure the child stays interested and 
 
 here is your Course outline:
 <course_outline>
-${course.content}
+${course.lesson_json}
 </course_outline>
 
 

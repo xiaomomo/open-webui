@@ -12,6 +12,7 @@ import time
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../')))
 from open_webui.apps.englishlesson.workflows.struct_lesson.struct_lesson_content import StructLessonWorkflow
+from open_webui.apps.englishlesson.workflows.lesson_question.lesson_question import LessonQuestionWorkflow
 from open_webui.apps.webui.models.fredisalesson import FredisaLessonForm, FredisaLessonModel, FredisaLessons
 
 
@@ -55,21 +56,31 @@ def process_pdf(input_path):
         return None
 
 async def save_unit(item):
-    # 如果item长度小于50，直接返回
+    # 如果item长度小于50，直接返回 再加一个条件直接过滤掉就好，临时简单做下
     if len(item) < 50:
         return
+    if "The following units are covered" in item:
+        return
     # save item to sqlite
-    fredisaLesson = FredisaLessonForm(unit=item.split('\n')[0], content=item, lesson_json="")
+    fredisaLesson = FredisaLessonForm(unit=item.split('\n')[0], content=item, lesson_json="", question_json="")
     fredisaLesson.content = item
     fredisaLesson.unit = item.split('\n')[0]
     # 调用工作流结构化lesson
-    w = StructLessonWorkflow(timeout=40, verbose=False)
+    w = StructLessonWorkflow(timeout=120, verbose=False)
+    print(f"workflow start with content:{fredisaLesson.content}")
+    if not fredisaLesson.content:
+        return
     lesson_json = await w.run(origin_content=fredisaLesson.content)
-    print(lesson_json)
+    print(f"workflow generate lesson_json:{lesson_json}")
     fredisaLesson.lesson_json = lesson_json
+
+    # 调用工作流生成question
+    w = LessonQuestionWorkflow(timeout=120, verbose=False)
+    question_json = await w.run(origin_content=fredisaLesson.lesson_json)
+    print(f"workflow generate question_json:{question_json}")
+
+    fredisaLesson.question_json = question_json
     lesson = FredisaLessons.insert_new_lesson(fredisaLesson)
-    # 调用工作流结构化 question
-    time.sleep(1)
     return lesson
 
 
