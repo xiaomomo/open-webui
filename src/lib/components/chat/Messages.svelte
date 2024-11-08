@@ -33,12 +33,13 @@
 	export let showMessage: Function = () => {};
 
 	export let readOnly = false;
-
 	export let bottomPadding = false;
 	export let autoScroll;
 
 	let messagesCount = 20;
 	let messagesLoading = false;
+
+	export let showFinishLesson = false;
 
 	const loadMoreMessages = async () => {
 		// scroll slightly down to disable continuous loading
@@ -309,19 +310,15 @@
 		await updateChatHistory();
 	};
 
-	//todo 怎么根据message的交互触发这些事件
-	let showChatContainer = true;
 	let showConfirmation = false;
 
 	function handleConfirm() {
-		showConfirmation = true;
-		setTimeout(() => {
-			showConfirmation = false;
-		}, 3000);
+		dispatch('chat_lesson_question');
+		showFinishLesson = false;
 	}
 
 	function handleCancel() {
-		showChatContainer = false;
+		showFinishLesson = false;
 	}
 </script>
 
@@ -564,7 +561,7 @@
 						/>
 					{/each}
 
-					{#if showChatContainer}
+					{#if showFinishLesson}
 						<div class="lesson-question-tip">
 							<div class="lesson-question-tip-message">Let's do a test together</div>
 							<div class="lesson-question-tip-button-container">

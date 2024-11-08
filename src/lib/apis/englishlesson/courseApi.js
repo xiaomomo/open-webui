@@ -10,3 +10,15 @@ export async function fetchCourses() {
 		return [];
 	}
 }
+
+export async function getLessonUnit(lessonUnitId) {
+	try {
+		console.log('getLessonUnit getLessonUnit lessonUnitId:' + lessonUnitId);
+		const response = await fetch(`${WEBUI_API_BASE_URL}/fredisalesson/fredisalessons/${lessonUnitId}`);
+		if (!response.ok) throw new Error('Failed to getLessonUnit');
+		return await response.json();
+	} catch (error) {
+		console.error('Error fetching courses:', error);
+		return [];
+	}
+}

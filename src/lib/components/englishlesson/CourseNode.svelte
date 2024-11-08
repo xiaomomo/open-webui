@@ -96,13 +96,15 @@ Making it feel like a fun chat involves using an informal tone, staying responsi
 Keep the activities short and engaging to ensure the child stays interested and feels like they’re just enjoying a conversation.
 
 here is your Course outline:
-<outline>
-    ${course.content}
-</outline>
+<course_outline>
+${course.content}
+</course_outline>
 
 
 It's important: You are teaching her on the phone.
 Now, please start your conversation.  and wait yaya's answer
+It's important!!! After your lesson, output "---- finish lesson ----"
+
 				`;
 
 		let encodeQ = encodeURIComponent(q);

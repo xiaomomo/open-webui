@@ -57,6 +57,7 @@
 	import { createOpenAITextStream } from '$lib/apis/streaming';
 	import { queryMemory } from '$lib/apis/memories';
 	import { getAndUpdateUserLocation, getUserSettings } from '$lib/apis/users';
+	import { getLessonUnit } from '$lib/apis/englishlesson/courseApi';
 	import {
 		chatCompleted,
 		generateTitle,
@@ -115,6 +116,7 @@
 	let chatFiles = [];
 	let files = [];
 	let params = {};
+	let showFinishLesson = false;
 
 	$: if (chatIdProp) {
 		(async () => {
@@ -860,6 +862,12 @@
 						_response = await sendPromptOpenAI(model, prompt, responseMessageId, _chatId);
 					} else if (model) {
 						_response = await sendPromptOllama(model, prompt, responseMessageId, _chatId);
+						// console.log("await sendPromptOllama response:{}", _response)
+						if (_response.includes("---- finish lesson ----")) {
+						// if (_response.includes("1")) {
+							showFinishLesson = true;
+							scrollToBottom()
+						}
 					}
 					_responses.push(_response);
 
@@ -1902,6 +1910,14 @@
 	function handleVideoEnd() {
 		// kid1VideoElement.play();
 	}
+	async function chat_lesson_question() {
+		let lessonUnitId = $page.url.searchParams.get('lessonUnitId');
+		console.log("chat_lesson_question chat_lesson_question lessonUnitId="+lessonUnitId)
+		// lessonUnitId
+	  let	lessonDetail = await getLessonUnit(lessonUnitId);
+		// new msg with lessonDetail
+		submitPrompt(JSON.stringify(lessonDetail));
+	}
 </script>
 
 <svelte:head>
@@ -2006,6 +2022,7 @@
 									bind:history
 									bind:autoScroll
 									bind:prompt
+									bind:showFinishLesson
 									{selectedModels}
 									{sendPrompt}
 									{showMessage}
@@ -2051,6 +2068,9 @@
 									}}
 									on:pause_blippi_animation={(e) => {
 										pauseKid1Video();
+									}}
+									on:chat_lesson_question={(e) => {
+										chat_lesson_question();
 									}}
 								/>
 							</div>
