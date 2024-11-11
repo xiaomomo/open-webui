@@ -34,5 +34,5 @@ Here are the details you need to comparison:
 {content_json}
 </content_json>
 
-Your job is to check if the content in the content_json covers at least 80% of the origin_content. Output "true" if it does, otherwise output "false". Respond only true or false. Do not write an introduction or summary.
+Your job is to check if the content in the content_json covers at least 60% of the origin_content. Output "true" if it does, otherwise output "false". Respond only true or false. Do not write an introduction or summary.
 """

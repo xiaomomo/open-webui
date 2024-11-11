@@ -57,7 +57,7 @@
 	import { createOpenAITextStream } from '$lib/apis/streaming';
 	import { queryMemory } from '$lib/apis/memories';
 	import { getAndUpdateUserLocation, getUserSettings } from '$lib/apis/users';
-	import { getLessonUnit } from '$lib/apis/englishlesson/courseApi';
+	import { getLessonUnit,finishLessonUnitQA } from '$lib/apis/englishlesson/courseApi';
 	import {
 		chatCompleted,
 		generateTitle,
@@ -867,6 +867,10 @@
 						// if (_response.includes("1")) {
 							showFinishLesson = true;
 							scrollToBottom()
+						}
+						// if (_response.includes("---- finish QA ----")) {
+							if (_response.includes("1")) {
+							finishUnitQA();
 						}
 					}
 					_responses.push(_response);
@@ -1913,10 +1917,32 @@
 	async function chat_lesson_question() {
 		let lessonUnitId = $page.url.searchParams.get('lessonUnitId');
 		console.log("chat_lesson_question chat_lesson_question lessonUnitId="+lessonUnitId)
-		// lessonUnitId
-	  let	lessonDetail = await getLessonUnit(lessonUnitId);
+		let	lessonDetail = await getLessonUnit(lessonUnitId);
 		// new msg with lessonDetail
-		submitPrompt(JSON.stringify(lessonDetail));
+		let prompt = `
+		You’re a friendly children's English teacher and child psychologist with a knack for making learning fun and engaging. You have a deep understanding of how children think and learn, and you excel at creating a supportive environment where they feel comfortable expressing themselves.
+
+Your task is to ask the students her name is yaya five multiple-choice questions in a conversational manner.
+for each question, tell students the options they can choose.
+After they answer, provide feedback on whether their answers are correct, encouraging them and helping them learn from their mistakes.
+
+Here are the questions you need to ask the students:
+<questions>
+${lessonDetail.question_json}
+</questions>
+Make sure to keep the tone light and encouraging, and provide gentle guidance for any incorrect answers.
+It's important: You are teaching her on the phone.
+Now, please start your conversation.  and wait yaya's answer
+It's important!!! After your lesson, output "---- finish QA ----"
+
+		`;
+		submitPrompt(prompt);
+	}
+
+	async function finishUnitQA(){
+		let lessonUnitId = $page.url.searchParams.get('lessonUnitId');
+		await finishLessonUnitQA("1",lessonUnitId, JSON.stringify(history.messages), "finish", localStorage.token);
+		// 弹出新的tip！这里的UI了
 	}
 </script>
 

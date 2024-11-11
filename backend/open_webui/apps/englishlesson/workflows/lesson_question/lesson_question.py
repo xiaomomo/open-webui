@@ -13,7 +13,7 @@ import json
 
 LESSON_JSON = "lesson_json"
 
-llm = Ollama(model="llama3:8b", request_timeout=120.0)
+llm = Ollama(model="llama3:8b", request_timeout=500.0)
 
 
 # workflow step:

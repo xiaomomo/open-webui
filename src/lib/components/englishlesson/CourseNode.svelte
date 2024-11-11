@@ -109,7 +109,7 @@ It's important!!! After your lesson, output "---- finish lesson ----"
 
 		let encodeQ = encodeURIComponent(q);
 		console.log(`http://localhost:5173/?model=llama3:8b&q=${encodeQ}&callOverlay=true&call=true`)
-		window.location.href = `http://localhost:5173/?model=llama3:8b&q=${encodeQ}&callOverlay=true&call=true`;
+		window.location.href = `http://localhost:5173/?model=llama3:8b&q=${encodeQ}&callOverlay=true&call=true&lessonUnitId=${course.id}`;
 
 	};
 

@@ -14,16 +14,18 @@ router = APIRouter()
 
 @router.get("/userlessons", response_model=list[UserLessonModel])
 async def get_user_lessons(user=Depends(get_verified_user)):
-    return UserLessons.get_all_lessons()
+    return UserLessons.get_all_user_lessons()
 
 ############################
 # CreateNewUserLesson
 ############################
 
 @router.post("/userlessons/create", response_model=Optional[UserLessonModel])
-async def create_new_user_lesson(form_data: UserLessonForm, user=Depends(get_admin_user)):
+async def create_new_user_lesson(form_data: UserLessonForm, user=Depends(get_verified_user)):
+
+    form_data.user_id=user.id
     print(f"test create_new_user_lesson form_data:{form_data}")
-    lesson = UserLessons.insert_new_lesson(form_data)
+    lesson = UserLessons.insert_new_user_lesson(form_data)
 
     if lesson:
         return lesson

@@ -13,14 +13,14 @@ from open_webui.apps.webui.internal.db import Base, get_db
 class UserLesson(Base):
     __tablename__ = "userlesson"
 
-    user_id = Column(BigInteger, primary_key=True)
+    user_id = Column(Text, primary_key=True)
     lesson_id = Column(BigInteger, primary_key=True)
     user_content = Column(Text)
     learn_status = Column(String)
 
 
 class UserLessonModel(BaseModel):
-    user_id: int
+    user_id: str
     lesson_id: int
     user_content: str
     learn_status: str
@@ -33,7 +33,7 @@ class UserLessonModel(BaseModel):
 ####################
 
 class UserLessonForm(BaseModel):
-    user_id: int
+    user_id: str
     lesson_id: int
     user_content: str
     learn_status: str

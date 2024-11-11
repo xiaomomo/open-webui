@@ -11,7 +11,7 @@ from .prompts import *
 from llama_index.llms.ollama import Ollama
 import json
 
-llm = Ollama(model="llama3:8b", request_timeout=120.0)
+llm = Ollama(model="llama3:8b", request_timeout=500.0)
 
 
 # workflow step:
@@ -83,7 +83,7 @@ class StructLessonWorkflow(Workflow):
             return SaveStructLessonEvent(lessonUnit=ev.lessonUnit)
         else:
             print("json content not same as origin content, repeat from start")
-            return StartEvent(content=origin_content)
+            return StartEvent(origin_content=origin_content)
 
     @step
     async def step_save_content(self, ev: SaveStructLessonEvent) -> StopEvent:
