@@ -19,6 +19,7 @@ class FredisaLesson(Base):
     content = Column(Text)
     lesson_json = Column(Text)
     question_json = Column(Text)
+    lesson_img = Column(Text)
 
 
 class FredisaLessonModel(BaseModel):
@@ -27,6 +28,7 @@ class FredisaLessonModel(BaseModel):
     content: str
     lesson_json: str
     question_json: str
+    lesson_img: Optional[str]
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -39,6 +41,7 @@ class FredisaLessonForm(BaseModel):
     content: str
     lesson_json: str
     question_json: str
+    lesson_img: Optional[str]
 
 class FredisaLessonTable:
     def insert_new_lesson(
@@ -50,7 +53,8 @@ class FredisaLessonTable:
                 "unit": form_data.unit,
                 "content": form_data.content,
                 "lesson_json": form_data.lesson_json,
-                "question_json": form_data.question_json
+                "question_json": form_data.question_json,
+                "lesson_img": form_data.lesson_img
             }
         )
 
@@ -91,9 +95,11 @@ class FredisaLessonTable:
                 lesson = db.query(FredisaLesson).filter_by(id=lesson_id).first()
                 lesson.unit = form_data.unit
                 lesson.content = form_data.content
+                lesson.lesson_img = form_data.lesson_img
                 db.commit()
                 return FredisaLessonModel.model_validate(lesson)
-        except Exception:
+        except Exception as e:
+            print(f"update lesson error: {e}")
             return None
 
     def delete_lesson_by_id(self, lesson_id: str) -> bool:
