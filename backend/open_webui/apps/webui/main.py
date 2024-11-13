@@ -22,6 +22,7 @@ from open_webui.apps.webui.routers import (
     diary,
     fredisaLesson,
     userlesson,
+    lessongame,
 )
 from open_webui.apps.webui.utils import load_function_module_by_id
 from open_webui.config import (
@@ -127,6 +128,7 @@ app.include_router(utils.router, prefix="/utils", tags=["utils"])
 app.include_router(diary.router, prefix="/diary", tags=["diary"])
 app.include_router(fredisaLesson.router, prefix="/fredisalesson", tags=["fredisalesson"])
 app.include_router(userlesson.router, prefix="/userlesson", tags=["userlesson"])
+app.include_router(lessongame.router, prefix="/lessongame", tags=["lessongame"])
 
 
 @app.get("/")

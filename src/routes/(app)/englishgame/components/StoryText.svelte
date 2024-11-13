@@ -1,16 +1,19 @@
 <script lang="ts">
-    export let text: string;
+    import { onMount, afterUpdate } from 'svelte';
+
+    export let text: string = '';
     export let isTyping: boolean;
 
+    let storyElement: HTMLElement;
+
     async function typeWriter(text: string, speed = 50) {
-        isTyping = true;
-        const storyText = document.getElementById('story-text');
-        if (!storyText) return;
+        if (!storyElement) return;
         
-        storyText.innerHTML = '';
+        isTyping = true;
+        storyElement.innerHTML = '';
         const cursor = document.createElement('span');
         cursor.className = 'typing-cursor';
-        storyText.appendChild(cursor);
+        storyElement.appendChild(cursor);
 
         for (let i = 0; i < text.length; i++) {
             await new Promise(resolve => setTimeout(resolve, speed));
@@ -20,13 +23,13 @@
         isTyping = false;
     }
 
-    $: if (text) {
+    $: if (text && storyElement) {
         typeWriter(text);
     }
 </script>
 
 <div id="story-area">
-    <div id="story-text"></div>
+    <div id="story-text" bind:this={storyElement}></div>
 </div>
 
 <style>
@@ -41,5 +44,18 @@
         font-size: 1.6em;
         line-height: 1.5;
         color: #444;
+    }
+
+    :global(.typing-cursor) {
+        display: inline-block;
+        width: 3px;
+        height: 1em;
+        background: #FF69B4;
+        margin-left: 2px;
+        animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+        50% { opacity: 0; }
     }
 </style> 

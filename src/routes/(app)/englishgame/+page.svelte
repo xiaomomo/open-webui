@@ -1,9 +1,9 @@
 <script lang="ts">
     import { onMount } from 'svelte';
     import { page } from '$app/stores';
-    import type { Scene} from '$lib/apis/englishgame/englishGameApi';
-    import { getGameResponse} from '$lib/apis/englishgame/englishGameApi';
+    import type { Scene } from '$lib/apis/englishlesson/gameApi';
     import { getLessonUnit } from '$lib/apis/englishlesson/courseApi';
+    import { getGameResponse } from '$lib/apis/englishlesson/gameApi';
     import GameTitle from './components/GameTitle.svelte';
     import StoryText from './components/StoryText.svelte';
     import GameImage from './components/GameImage.svelte';
@@ -13,7 +13,7 @@
     let currentScene: Scene | null = null;
     let inputValue = '';
     let isTyping = false;
-    let lessonDetail = null;
+    let lessonDetail: any = null;
 
     async function loadLessonDetail() {
         let lessonUnitId = $page.url.searchParams.get('lessonUnitId');
@@ -21,11 +21,12 @@
 
         try {
             lessonDetail = await getLessonUnit(lessonUnitId);
-            // Initialize the game with lesson details
-            currentScene = await fetchScene({ 
-                action: 'start',
-                lessonUnitId: lessonUnitId 
-            });
+            // Initialize first scene
+            const formData = {
+                lessonId: lessonDetail.id,
+                type: 'start'
+            };
+            currentScene = await getGameResponse(formData);
         } catch (error) {
             console.error('Error loading lesson:', error);
         }
@@ -33,29 +34,23 @@
     
     onMount(loadLessonDetail);
 
-    async function fetchScene(actionData: any) {
-        const response = await getGameResponse(actionData);
-
-        if (!response.ok) {
-            throw new Error('Failed to fetch scene');
-        }
-
-        return await response.json();
-    }
-    
     async function handleInput() {
         if (!inputValue.trim() || !currentScene) return;
         
         try {
-            currentScene = await fetchScene({
-                action: 'input',
+            const formData = {
+                lessonId: lessonDetail.id,
                 sceneId: currentScene.id,
-                input: inputValue
-            });
+                input: inputValue,
+                type: 'input'
+            };
+
+            const response = await getGameResponse(formData);
+            console.log('Response received:', response); // Debug log
+            currentScene = response;
             inputValue = '';
         } catch (error) {
             console.error('Error handling input:', error);
-            // Handle error appropriately
         }
     }
 
@@ -63,20 +58,23 @@
         if (!currentScene) return;
 
         try {
-            currentScene = await fetchScene({
-                action: 'choice',
+            const formData = {
+                lessonId: lessonDetail.id,
                 sceneId: currentScene.id,
-                choiceId
-            });
+                choiceId: choiceId,
+                type: 'choice'
+            };
+
+            const response = await getGameResponse(formData);
+            currentScene = response;
         } catch (error) {
             console.error('Error handling choice:', error);
-            // Handle error appropriately
         }
     }
 </script>
 
 <div id="game-container">
-    <GameTitle lessonDetail={lessonDetail} />
+    <GameTitle {lessonDetail} />
     
     <div id="content-area">
         <div id="story-column">
