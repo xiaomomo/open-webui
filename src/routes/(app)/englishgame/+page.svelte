@@ -1,0 +1,5 @@
+You're an experienced child psychologist, English teacher, game designer, senior product designer, and front-end developer.
+I have a My Little Pony text adventure game made for kids.
+The game progresses through chats between the player and the game. There are many choices and challenges, and players need to make decisions and give answers.
+The game is designed for children, so please make it cute and appealing.
+Please use H5 to develop this game.
