@@ -1,5 +1,370 @@
-You're an experienced child psychologist, English teacher, game designer, senior product designer, and front-end developer.
-I have a My Little Pony text adventure game made for kids.
-The game progresses through chats between the player and the game. There are many choices and challenges, and players need to make decisions and give answers.
-The game is designed for children, so please make it cute and appealing.
-Please use H5 to develop this game.
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Little Pony Adventure</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Arial Rounded MT Bold', Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #ffd6e7, #c1e3ff);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #game-container {
+            background: white;
+            border-radius: 40px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+            min-height: 700px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #title {
+            text-align: left;
+            margin-bottom: 30px;
+            font-size: 2.8em;
+            color: #FF69B4;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        #content-area {
+            display: flex;
+            gap: 30px;
+            flex-grow: 1;
+            margin-bottom: 30px;
+        }
+
+        #story-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #story-area {
+            background: #FFF5F8;
+            border-radius: 25px;
+            padding: 30px;
+            flex-grow: 1;
+        }
+
+        #story-text {
+            font-size: 1.6em;
+            line-height: 1.5;
+            color: #444;
+        }
+
+        #image-column {
+            width: 300px;
+            background: #FFF5F8;
+            border-radius: 25px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #game-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 15px;
+            display: none;
+        }
+
+        #game-image.show {
+            display: block;
+        }
+
+        .typing-cursor {
+            display: inline-block;
+            width: 3px;
+            height: 1.2em;
+            background: #FF69B4;
+            margin-left: 2px;
+            animation: blink 1s infinite;
+            vertical-align: middle;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        #interaction-area {
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        #choices-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: opacity 0.5s;
+        }
+
+        #choices-container.show {
+            opacity: 1;
+        }
+
+        .choice-btn {
+            background: #ff9ecd;
+            border: none;
+            border-radius: 25px;
+            padding: 15px 25px;
+            color: white;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        .choice-btn:hover {
+            background: #ff7eb8;
+            transform: scale(1.02);
+        }
+
+        #player-input {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        #player-input.show {
+            opacity: 1;
+        }
+
+        #input-field {
+            width: 100%;
+            padding: 15px 25px;
+            border: 2px solid #FF9ECD;
+            border-radius: 25px;
+            font-size: 1.2em;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        #input-field:focus {
+            border-color: #FF69B4;
+        }
+
+        @media (max-width: 768px) {
+            #content-area {
+                flex-direction: column;
+            }
+
+            #image-column {
+                width: 100%;
+                min-height: 200px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+
+            #game-container {
+                padding: 20px;
+            }
+
+            #title {
+                font-size: 1.8em;
+            }
+
+            #story-text {
+                font-size: 1.2em;
+            }
+        }
+
+        /* Add choice-button styles here */
+        .choice-button {
+            background: linear-gradient(135deg, #FFB6C1, #FF69B4);
+            border: none;
+            border-radius: 25px;
+            padding: 15px 30px;
+            margin: 10px;
+            font-size: 1.2em;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 105, 180, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .choice-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(255, 105, 180, 0.4);
+        }
+
+        .choice-button:active {
+            transform: translateY(1px);
+        }
+
+        .choice-button span {
+            font-size: 1.4em;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="title">
+            <span>🦄</span>
+            My Little Pony Adventure
+            <span>🌈</span>
+        </div>
+        <div id="content-area">
+            <div id="story-column">
+                <div id="story-area">
+                    <div id="story-text"></div>
+                </div>
+            </div>
+            <div id="image-column">
+                <img id="game-image" alt="Scene Image">
+            </div>
+        </div>
+        <div id="interaction-area">
+            <div id="choices-container">
+
+            </div>
+            <div id="player-input">
+                <input type="text" id="input-field" placeholder="Type your answer..." autocomplete="off">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const gameState = {
+            currentScene: 'start',
+            inventory: [],
+            friendshipPoints: 0
+        };
+
+        const gameScenes = {
+            start: {
+                text: "Welcome to Ponyville! 🏰 You're a new pony in town. What's your favorite color? This will help determine what kind of pony you are!",
+                type: 'input',
+                handler: (answer) => {
+                    gameState.playerColor = answer.toLowerCase();
+                    return 'chooseName';
+                }
+            },
+            chooseName: {
+                text: "That's a wonderful color! Now, what would you like your pony name to be?",
+                type: 'input',
+                handler: (answer) => {
+                    gameState.playerName = answer;
+                    return 'meetTwilight';
+                }
+            },
+            meetTwilight: {
+                text: function() {
+                    return `Hello ${gameState.playerName}! I'm Twilight Sparkle. I love your ${gameState.playerColor} color!`;
+                },
+                choices: [
+                    { text: "Learn about magic 📚", nextScene: 'learnMagic' },
+                    { text: "Explore Ponyville 🏘️", nextScene: 'explorePonyville' },
+                    { text: "Make new friends 👋", nextScene: 'makeFriends' }
+                ]
+            }
+        };
+
+        function setGameImage(imageUrl) {
+            const gameImage = document.getElementById('game-image');
+            if (imageUrl) {
+                gameImage.src = imageUrl;
+                gameImage.classList.add('show');
+            } else {
+                gameImage.classList.remove('show');
+            }
+        }
+
+        async function typeWriter(element, text, speed = 50) {
+            element.innerHTML = '';
+            const cursor = document.createElement('span');
+            cursor.className = 'typing-cursor';
+            element.appendChild(cursor);
+
+            for (let i = 0; i < text.length; i++) {
+                await new Promise(resolve => setTimeout(resolve, speed));
+                cursor.insertAdjacentText('beforebegin', text[i]);
+            }
+
+            return new Promise(resolve => setTimeout(resolve, 500));
+        }
+
+        async function updateGame(scene) {
+            const sceneData = gameScenes[scene];
+            const storyText = document.getElementById('story-text');
+            const choicesContainer = document.getElementById('choices-container');
+            const playerInput = document.getElementById('player-input');
+
+            // Clear previous content
+            choicesContainer.innerHTML = '';
+            playerInput.style.display = 'none';
+            playerInput.classList.remove('show');
+
+            // Update image and text
+            setGameImage(sceneData.image);
+            const textContent = typeof sceneData.text === 'function' ? sceneData.text() : sceneData.text;
+            await typeWriter(storyText, textContent);
+
+            // Handle interaction based on scene type
+            if (sceneData.type === 'input') {
+                // Show input field
+                playerInput.style.display = 'block';
+                playerInput.classList.add('show');
+                const inputField = document.getElementById('input-field');
+                inputField.value = '';
+                inputField.focus();
+            } else if (sceneData.choices) {
+                choicesContainer.style.display = 'flex';
+                sceneData.choices.forEach(choice => {
+                    const button = document.createElement('button');
+                    button.className = 'choice-btn';
+                    button.textContent = choice.text;
+                    button.onclick = () => {
+                        gameState.currentScene = choice.nextScene;
+                        updateGame(choice.nextScene);
+                    };
+                    choicesContainer.appendChild(button);
+                });
+                setTimeout(() => {
+                    choicesContainer.classList.add('show');
+                }, 100);
+            }
+        }
+
+        document.getElementById('input-field').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && e.target.value.trim() !== '') {
+                const currentScene = gameScenes[gameState.currentScene];
+                if (currentScene.handler) {
+                    const nextScene = currentScene.handler(e.target.value);
+                    gameState.currentScene = nextScene;
+                    updateGame(nextScene);
+                    e.target.value = '';
+                }
+            }
+        });
+
+        updateGame('start');
+    </script>
+</body>
+</html>
