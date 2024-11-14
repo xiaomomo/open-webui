@@ -861,6 +861,9 @@ async def generate_openai_chat_completion(
     url_idx: Optional[int] = None,
     user=Depends(get_verified_user),
 ):
+    # does history msg is here?
+    print(f"generate_openai_chat_completion form_data:{form_data}")
+
     completion_form = OpenAIChatCompletionForm(**form_data)
     payload = {**completion_form.model_dump(exclude_none=True, exclude=["metadata"])}
     if "metadata" in payload:
@@ -892,7 +895,7 @@ async def generate_openai_chat_completion(
 
     url = get_ollama_url(url_idx, payload["model"])
     log.info(f"url: {url}")
-
+    pringt(f"generate_openai_chat_completion payload:{json.dumps(payload)}")
     return await post_streaming_url(
         f"{url}/v1/chat/completions",
         json.dumps(payload),
