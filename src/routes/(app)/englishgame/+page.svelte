@@ -13,6 +13,8 @@
 	import ConfettiEffect from './components/ConfettiEffect.svelte';
 	import CharacterMascot from './components/CharacterMascot.svelte';
 	import SoundEffects from './components/SoundEffects.svelte';
+	import GameChat from './components/GameChat.svelte';
+	import { synthesizeSoVITSSpeech } from '$lib/apis/audio';
 
 	let currentScene: Scene | null = null;
 	let inputValue = '';
@@ -22,6 +24,7 @@
 	let showConfetti = false;
 	let mascotMood = 'happy'; // Can be: happy, thinking, excited, etc.
 	let soundEnabled = true;
+	let gameChat: GameChat;
 
 	async function loadLessonDetail() {
 		isLoading = true;
@@ -33,7 +36,10 @@
 			// Initialize first scene
 			const formData = {
 				lessonId: lessonDetail.id,
-				type: 'start'
+				type: 'start',
+				courseContent: lessonDetail.lesson_json,
+				courseQuestions: lessonDetail.question_json,
+				lessonImg: lessonDetail.lesson_img
 			};
 			currentScene = await getGameResponse(formData);
 		} catch (error) {
@@ -43,52 +49,94 @@
 		}
 	}
 
-	onMount(loadLessonDetail);
+	onMount(async () => {
+		await loadLessonDetail();
+		if (gameChat) {
+			await gameChat.startGameChat(currentScene);
+		}
+	});
 
-	async function handleInput() {
-		if (!inputValue.trim() || !currentScene) return;
-
+	async function handleGameResponse(formData: any, userMessage: string) {
 		isLoading = true;
 		try {
-			const formData = {
-				lessonId: lessonDetail.id,
-				sceneId: currentScene.id,
-				input: inputValue,
-				type: 'input'
-			};
-
 			const response = await getGameResponse(formData);
 			currentScene = response;
-			inputValue = '';
+
+			// Add TTS for the response text
+			const audio = await synthesizeSoVITSSpeech(
+				localStorage.token,
+				$settings?.audio?.tts?.defaultVoice === $config.audio.tts.voice
+					? ($settings?.audio?.tts?.voice ?? $config?.audio?.tts?.voice)
+					: $config?.audio?.tts?.voice,
+				response.text
+			).catch((error) => {
+				console.error('TTS Error:', error);
+			});
+
+			if (audio) {
+				const blob = await audio.blob();
+				const blobUrl = URL.createObjectURL(blob);
+				const audioElement = new Audio(blobUrl);
+				audioElement.play();
+			}
+
+			// Handle chat updates
+			if (gameChat) {
+				const userMessageId = await gameChat.submitGameMessage(userMessage);
+				await gameChat.receiveGameResponse(response.text, userMessageId);
+			}
+
+			return response;
 		} catch (error) {
-			console.error('Error handling input:', error);
+			console.error('Error handling game response:', error);
+			throw error;
 		} finally {
 			isLoading = false;
 		}
 	}
 
-	async function handleChoice(choiceId: string) {
-		if (!currentScene) return;
+	async function handleInput() {
+		if (!inputValue.trim() || !currentScene) return;
 
-		isLoading = true;
+		try {
+			const formData = {
+				lessonId: lessonDetail.id,
+				sceneId: currentScene.id,
+				input: inputValue,
+				type: 'input',
+				messages: gameChat.getCurrentMessages(),
+				courseContent: lessonDetail.lesson_json,
+				courseQuestions: lessonDetail.question_json
+			};
+
+			await handleGameResponse(formData, inputValue);
+			inputValue = '';
+		} catch (error) {
+			console.error('Error handling input:', error);
+		}
+	}
+
+	async function handleChoice(choiceId: string) {
+		if (!currentScene || !gameChat) return;
+
 		try {
 			const formData = {
 				lessonId: lessonDetail.id,
 				sceneId: currentScene.id,
 				choiceId: choiceId,
-				type: 'choice'
+				type: 'choice',
+				messages: gameChat.getCurrentMessages(),
+				courseContent: lessonDetail.lesson_json,
+				courseQuestions: lessonDetail.question_json
 			};
 
-			const response = await getGameResponse(formData);
-			currentScene = response;
+			await handleGameResponse(formData, choiceId);
+			
 			showConfetti = true;
 			mascotMood = 'excited';
 			setTimeout(() => showConfetti = false, 2000);
 		} catch (error) {
-			mascotMood = 'sad';
 			console.error('Error handling choice:', error);
-		} finally {
-			isLoading = false;
 		}
 	}
 </script>
@@ -118,10 +166,11 @@
 						</div>
 					</LoadingSpinner>
 				{/if}
+				<GameChat bind:this={gameChat} />
 			</div>
 		</div>
 
-		<GameImage imageUrl={currentScene?.image} />
+		<GameImage imageUrl={currentScene?.image || lessonDetail?.lesson_img} />
 	</div>
 
 	<div id="interaction-area">

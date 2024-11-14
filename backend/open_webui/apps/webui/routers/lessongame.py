@@ -13,12 +13,22 @@ router = APIRouter()
 # Make sure your API key is set
 dashscope.api_key = os.getenv('DASHSCOPE_API_KEY')
 
+class CourseContent(BaseModel):
+    unit: str
+    objectives: list[str]
+    lesson_story: str
+    vocabulary: list
+    key_sentences: list
+
 class GameResponse(BaseModel):
     lesson_id: str
     scene_id: Optional[str] = None
     user_input: Optional[str] = None
     choice_id: Optional[str] = None
     action_type: str
+    messages: Optional[list] = None
+    course_content: Optional[CourseContent] = None
+    course_questions: Optional[list] = None
 
 @router.post("/complateresponse")
 async def complateresponse(form_data: GameResponse):
@@ -32,44 +42,68 @@ async def complateresponse(form_data: GameResponse):
             "type": "input"
         }
         
-        # Construct prompt based on action type
-        if form_data.action_type == 'start':
-            prompt = """Generate a game scene response in JSON format with the following structure:
-            {
-                "id": "start",
-                "text": "<welcome message>",
-                "type": "input"
-            }
-            Make it welcoming and engaging for an English learning game."""
-            
-        elif form_data.action_type == 'input':
-            prompt = f"""Based on user input: "{form_data.user_input}", generate a game scene response in JSON format:
-            {{
-                "id": "next_scene",
-                "text": "<response based on user input>",
-                "type": "choice",
-                "choices": [
-                    {{"id": "1", "text": "<option 1>"}},
-                    {{"id": "2", "text": "<option 2>"}}
-                ]
-            }}
-            Make the response educational and interactive."""
-            
-        elif form_data.action_type == 'choice':
-            prompt = f"""Based on user choice {form_data.choice_id}, generate a game scene response in JSON format:
-            {{
-                "id": "final_scene",
-                "text": "<response based on user choice>",
-                "type": "input"
-            }}
-            Provide feedback that encourages learning."""
+        # Convert messages to conversation format
+        conversation_history = ""
+        if form_data.messages:
+            for msg in form_data.messages:
+                role = "Assistant" if msg.get("isBot") else "User"
+                conversation_history += f"{role}: {msg.get('content', '')}\n"
+        
+        # Format course content and questions for the prompt
+        course_content = json.dumps(form_data.course_content.dict() if form_data.course_content else {}, indent=2)
+        course_questions = json.dumps(form_data.course_questions if form_data.course_questions else [], indent=2)
+        
+        # Unified prompt combining My Little Pony theme with game mechanics
+        prompt = f"""You're a My Little Pony text adventure game made for kids. You're designed to be really fun, so lots of kids like to play.
+
+        Current game state:
+        - Action Type: {form_data.action_type}
+        - User Input: {form_data.user_input if form_data.user_input else 'None'}
+        - Choice Selected: {form_data.choice_id if form_data.choice_id else 'None'}
+
+        Previous conversation:
+        {conversation_history}
+
+        The game is around her adventure, where players will make choices based on the course content and questions provided.
+
+        The game content are:
+        <CourseContent>
+        {course_content}
+        </CourseContent>
+
+        The game challenge are:
+        <CourseQuestions>
+        {course_questions}
+        </CourseQuestions>
+
+        The game is suitable for fans of My Little Pony, combining fun, exploration, and decision-making elements that reflect the values of friendship and learning. It includes various paths and endings based on players' choices throughout the adventure.
+
+        Use simple sentences to move the story forward. After 5 game challenges finish, the game will be over with congratulations.
+
+        Generate an appropriate game response in JSON format. The response should:
+        1. For new conversations, provide a welcoming message with type "input"
+        2. For user inputs, provide feedback and present choices with type "choice"
+        3. For user choices, provide feedback and continue the conversation with type "input"
+
+        Response must be in this JSON format:
+        {{
+            "id": "<scene_id>",
+            "text": "<response text>",
+            "type": "input" or "choice",
+            "choices": [                    // Include only if type is "choice"
+                {{"id": "1", "text": "<option 1>"}},
+                {{"id": "2", "text": "<option 2>"}}
+            ]
+        }}
+
+        Make the response fun, engaging, and suitable for kids learning English through My Little Pony adventures."""
 
         try:
             # Call DashScope API with error handling
             response = Generation.call(
                 model='qwen-plus',
                 messages=[
-                    {'role': 'system', 'content': 'You are an English learning game assistant. Provide responses in valid JSON format only.'},
+                    {'role': 'system', 'content': 'You are a My Little Pony English learning game assistant for kids. Provide responses in valid JSON format only.'},
                     {'role': 'user', 'content': prompt}
                 ]
             )

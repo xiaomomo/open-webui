@@ -25,7 +25,10 @@ export async function getGameResponse(formData) {
             scene_id: formData.sceneId,
             user_input: formData.input,
             choice_id: formData.choiceId,
-            action_type: formData.type
+            action_type: formData.type,
+            messages: formData.messages,
+            course_content: formData.courseContent,
+            course_questions: formData.courseQuestions
         };
 
         const response = await fetch(`${WEBUI_API_BASE_URL}/lessongame/complateresponse`, {
