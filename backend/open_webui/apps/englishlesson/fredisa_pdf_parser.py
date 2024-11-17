@@ -62,7 +62,14 @@ async def save_unit(item):
     if "The following units are covered" in item:
         return
     # save item to sqlite
-    fredisaLesson = FredisaLessonForm(unit=item.split('\n')[0], content=item, lesson_json="", question_json="",lesson_img="")
+    fredisaLesson = FredisaLessonForm(
+        unit=item.split('\n')[0], 
+        subject="English",  # Add default subject
+        content=item, 
+        lesson_json="", 
+        question_json="",
+        lesson_img=""
+    )
     fredisaLesson.content = item
     fredisaLesson.unit = item.split('\n')[0]
     # 调用工作流结构化lesson

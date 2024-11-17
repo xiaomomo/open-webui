@@ -16,6 +16,7 @@ class FredisaLesson(Base):
 
     id = Column(String, primary_key=True)
     unit = Column(String)
+    subject = Column(String)
     content = Column(Text)
     lesson_json = Column(Text)
     question_json = Column(Text)
@@ -25,6 +26,7 @@ class FredisaLesson(Base):
 class FredisaLessonModel(BaseModel):
     id: str
     unit: str
+    subject: str
     content: str
     lesson_json: str
     question_json: str
@@ -38,6 +40,7 @@ class FredisaLessonModel(BaseModel):
 
 class FredisaLessonForm(BaseModel):
     unit: str
+    subject: str
     content: str
     lesson_json: str
     question_json: str
@@ -51,6 +54,7 @@ class FredisaLessonTable:
             **{
                 "id": str(int(datetime.now().strftime("%Y%m%d%H%M%S"))),
                 "unit": form_data.unit,
+                "subject": form_data.subject,
                 "content": form_data.content,
                 "lesson_json": form_data.lesson_json,
                 "question_json": form_data.question_json,
@@ -94,6 +98,7 @@ class FredisaLessonTable:
             with get_db() as db:
                 lesson = db.query(FredisaLesson).filter_by(id=lesson_id).first()
                 lesson.unit = form_data.unit
+                lesson.subject = form_data.subject
                 lesson.content = form_data.content
                 lesson.lesson_img = form_data.lesson_img
                 db.commit()

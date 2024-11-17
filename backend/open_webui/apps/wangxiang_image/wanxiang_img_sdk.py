@@ -54,7 +54,81 @@ def append_lesson_img(lesson):
 
 if __name__ == '__main__':
     # todo
-    all_lessons = FredisaLessons.get_all_lessons()
-    for lesson in all_lessons:
-        append_lesson_img(lesson)
+    # all_lessons = FredisaLessons.get_all_lessons()
+    # for lesson in all_lessons:
+    #     append_lesson_img(lesson)
+
+    prompt = """
+    Generate detailed scene image descriptions based on the following screenplay scene:
+
+<screen>
+{
+            "sceneNumber": 3,
+            "location": "马棚",
+            "timeOfDay": "中午",
+            "screenContent": "小马回到了马棚，老马正坐在那里休息。马棚里依旧温暖而宁静。",
+            "playerBehavior": {
+                "dialogue": [
+                    {
+                        "character": "老马",
+                        "chinese": "怎么回来啦？"
+                    },
+                    {
+                        "character": "小马",
+                        "chinese": "一条河挡住了去路，我过不去。"
+                    },
+                    {
+                        "character": "老马",
+                        "chinese": "那条河不是很浅吗？"
+                    },
+                    {
+                        "character": "小马",
+                        "chinese": "是呀！牛伯伯也这么说。可是松鼠说河水很深，还淹死过他的伙伴呢！"
+                    },
+                    {
+                        "character": "老马",
+                        "chinese": "那么河水到底是深还是浅呢？你仔细想过他们的话吗？"
+                    },
+                    {
+                        "character": "小马",
+                        "chinese": "没...没想过。"
+                    },
+                    {
+                        "character": "老马",
+                        "chinese": "孩子，光听别人说，自己不动脑筋，不去试试，是不行的。河水是深是浅，你去试一试，就知道了。"
+                    }
+                ],
+                "actions": "小马低下了头，显得有些羞愧。老马则用温柔的眼神看着他。"
+            }
+</screen>
+
+Please create visual descriptions for each scene that include:
+
+1. Setting Elements:
+   - Physical environment and layout
+   - Time of day and lighting
+   - Props and relevant objects
+   - Cultural-specific details
+
+2. Character Visualization:
+   - Character positions and poses
+   - Detailed facial expressions showing emotional states
+   - Natural gestures and body language
+   - Culturally appropriate clothing and accessories
+   - Personal style and character-specific details
+
+3. Action Representation:
+   - Dynamic movement and natural interactions
+   - Emotional undertones in body language
+   - Key moments in the dialogue with emotional weight
+   - Visual cues for language learning
+   - Environmental interaction details
+
+4. Atmospheric Elements:
+   - Lighting and shadows
+   - Weather effects and time of day
+   - Ambient details (people in background, street noise, etc.)
+   - Mood-setting elements
+    """
+    simple_call(prompt)
 

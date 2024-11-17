@@ -15,6 +15,7 @@
 	import SoundEffects from './components/SoundEffects.svelte';
 	import GameChat from './components/GameChat.svelte';
 	import { synthesizeSoVITSSpeech } from '$lib/apis/audio';
+	import { config, models, settings, user } from '$lib/stores';
 
 	let currentScene: Scene | null = null;
 	let inputValue = '';
@@ -62,22 +63,30 @@
 			const response = await getGameResponse(formData);
 			currentScene = response;
 
-			// Add TTS for the response text
-			const audio = await synthesizeSoVITSSpeech(
-				localStorage.token,
-				$settings?.audio?.tts?.defaultVoice === $config.audio.tts.voice
-					? ($settings?.audio?.tts?.voice ?? $config?.audio?.tts?.voice)
-					: $config?.audio?.tts?.voice,
-				response.text
-			).catch((error) => {
-				console.error('TTS Error:', error);
-			});
+			// Add error handling for TTS configuration
+			try {
+				const defaultVoice = $settings?.audio?.tts?.defaultVoice;
+				const configVoice = $config?.audio?.tts?.voice;
+				const selectedVoice = defaultVoice === configVoice
+					? ($settings?.audio?.tts?.voice ?? configVoice)
+					: configVoice;
 
-			if (audio) {
-				const blob = await audio.blob();
-				const blobUrl = URL.createObjectURL(blob);
-				const audioElement = new Audio(blobUrl);
-				audioElement.play();
+				if (selectedVoice) {
+					const audio = await synthesizeSoVITSSpeech(
+						localStorage.token,
+						selectedVoice,
+						response.text
+					);
+
+					if (audio) {
+						const blob = await audio.blob();
+						const blobUrl = URL.createObjectURL(blob);
+						const audioElement = new Audio(blobUrl);
+						audioElement.play();
+					}
+				}
+			} catch (error) {
+				console.error('TTS Error:', error);
 			}
 
 			// Handle chat updates

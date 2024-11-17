@@ -7,7 +7,7 @@
     let storyElement: HTMLElement;
     let textElement: HTMLElement;
 
-    async function typeWriter(text: string, speed = 50) {
+    async function typeWriter(text: string, speed = 80) {
         if (!textElement) return;
         
         isTyping = true;
@@ -70,7 +70,7 @@
     }
 
     #text-content {
-        font-size: 1.6em;
+        font-size: 1.2em;
         line-height: 1.5;
         color: #444;
         width: 100%;
