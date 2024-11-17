@@ -16,6 +16,7 @@
 	import GameChat from './components/GameChat.svelte';
 	import { synthesizeSoVITSSpeech } from '$lib/apis/audio';
 	import { config, models, settings, user } from '$lib/stores';
+	import BackgroundMusic from './components/BackgroundMusic.svelte';
 
 	let currentScene: Scene | null = null;
 	let inputValue = '';
@@ -26,7 +27,10 @@
 	let mascotMood = 'happy'; // Can be: happy, thinking, excited, etc.
 	let soundEnabled = true;
 	let gameChat: GameChat;
-
+	let bgMusicVolume = 0.3;
+	let bgMusic: HTMLAudioElement;
+	let backgroundMusicComponent: any;
+	
 	async function loadLessonDetail() {
 		isLoading = true;
 		let lessonUnitId = $page.url.searchParams.get('lessonUnitId');
@@ -55,6 +59,7 @@
 		if (gameChat) {
 			await gameChat.startGameChat(currentScene);
 		}
+		backgroundMusicComponent?.startMusic();
 	});
 
 	async function handleGameResponse(formData: any, userMessage: string) {
@@ -63,7 +68,6 @@
 			const response = await getGameResponse(formData);
 			currentScene = response;
 
-			// Add error handling for TTS configuration
 			try {
 				const defaultVoice = $settings?.audio?.tts?.defaultVoice;
 				const configVoice = $config?.audio?.tts?.voice;
@@ -72,6 +76,11 @@
 					: configVoice;
 
 				if (selectedVoice) {
+					if (bgMusic) {
+						const originalVolume = bgMusic.volume;
+						bgMusic.volume = 0.1;
+					}
+
 					const audio = await synthesizeSoVITSSpeech(
 						localStorage.token,
 						selectedVoice,
@@ -82,14 +91,24 @@
 						const blob = await audio.blob();
 						const blobUrl = URL.createObjectURL(blob);
 						const audioElement = new Audio(blobUrl);
+						
+						audioElement.onended = () => {
+							if (bgMusic) {
+								bgMusic.volume = bgMusicVolume;
+							}
+						};
+						
+						
 						audioElement.play();
 					}
 				}
 			} catch (error) {
 				console.error('TTS Error:', error);
+				if (bgMusic) {
+					bgMusic.volume = bgMusicVolume;
+				}
 			}
 
-			// Handle chat updates
 			if (gameChat) {
 				const userMessageId = await gameChat.submitGameMessage(userMessage);
 				await gameChat.receiveGameResponse(response.text, userMessageId);
@@ -148,9 +167,19 @@
 			console.error('Error handling choice:', error);
 		}
 	}
+
+	function handleStartGame() {
+		backgroundMusicComponent?.startMusic();
+		// ... rest of your start game logic
+	}
 </script>
 
-<SoundEffects enabled={soundEnabled} />
+<BackgroundMusic 
+	bind:this={backgroundMusicComponent}
+	enabled={true} 
+	volume={bgMusicVolume}
+	bind:audio={bgMusic}
+/>
 <div id="game-container">
 	<div class="title-container">
 		<GameTitle {lessonDetail} />

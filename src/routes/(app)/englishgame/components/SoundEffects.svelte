@@ -1,11 +1,5 @@
-<script>
+<script lang="ts">
     export let enabled = true;
-    
-    const sounds = {
-        correct: new Audio('/static/englishgame/correct.mp3'),
-        wrong: new Audio('/static/englishgame/wrong.mp3'),
-        click: new Audio('/static/englishgame/click.mp3')
-    };
     
     function toggleSound() {
         enabled = !enabled;
@@ -18,4 +12,21 @@
     {:else}
         🔇
     {/if}
-</button> 
+</button>
+
+<style>
+    .sound-toggle {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 24px;
+        padding: 10px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.8);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .sound-toggle:hover {
+        background: rgba(255, 255, 255, 1);
+    }
+</style> 
