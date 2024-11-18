@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Candy Level Selection</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #ffb6c1;
+            font-family: Arial, sans-serif;
+        }
+
+        #gameContainer {
+            width: 100vw;
+            height: 300vh;
+            background: linear-gradient(45deg, #ff9eb5, #ffc0cb);
+            position: relative;
+            border-radius: 0;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        .level {
+            width: 40px;
+            height: 40px;
+            background: #8a2be2;
+            border-radius: 50%;
+            position: absolute;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+
+        .level.locked {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .level:not(.locked):hover {
+            transform: scale(1.2);
+        }
+
+        .cloud {
+            width: 60px;
+            height: 30px;
+            background: white;
+            border-radius: 15px;
+            position: absolute;
+            opacity: 0.8;
+            z-index: 2;
+        }
+
+        .cloud::before,
+        .cloud::after {
+            content: '';
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+        }
+
+        .cloud::before {
+            width: 25px;
+            height: 25px;
+            top: -10px;
+            left: 15px;
+        }
+
+        .cloud::after {
+            width: 20px;
+            height: 20px;
+            top: -5px;
+            left: 35px;
+        }
+
+        .mushroom {
+            width: 20px;
+            height: 20px;
+            position: absolute;
+            background: #ff69b4;
+            border-radius: 50%;
+            z-index: 1;
+        }
+
+        .mushroom::after {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 8px;
+            background: white;
+            bottom: 5px;
+            left: 5px;
+            border-radius: 50%;
+        }
+
+        .level-path {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .level-path path {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.8);
+            stroke-width: 4;
+            stroke-dasharray: 8 8; /* 创建虚线效果 */
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="levelPath"></div>
+    </div>
+
+    <script>
+        function calculatePointOnCurve(t) {
+            const width = window.innerWidth;
+            const height = document.getElementById('gameContainer').offsetHeight;
+            
+            const amplitude = 0.2;
+            const frequency = 3;
+            
+            const x = width * (
+                0.5 + 
+                amplitude * Math.sin(frequency * Math.PI * t) + 
+                0.1 * Math.sin(2 * frequency * Math.PI * t)
+            );
+            
+            const y = height * (0.02 + 0.95 * t);
+            
+            return { x, y };
+        }
+
+        function isNearPath(x, y) {
+            for(let t = 0; t <= 1; t += 0.01) {
+                const pathPoint = calculatePointOnCurve(t);
+                const distance = Math.sqrt(
+                    Math.pow(x - pathPoint.x, 2) + 
+                    Math.pow(y - pathPoint.y, 2)
+                );
+                if (distance < 50) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function generateSafePosition() {
+            let x, y, attempts = 0;
+            const container = document.getElementById('gameContainer');
+            do {
+                x = Math.random() * window.innerWidth;
+                y = Math.random() * container.offsetHeight;
+                attempts++;
+            } while (isNearPath(x, y) && attempts < 50);
+            return { x, y };
+        }
+
+        function createClouds() {
+            for(let i = 0; i < 10; i++) {
+                const cloud = document.createElement('div');
+                cloud.className = 'cloud';
+                const pos = generateSafePosition();
+                cloud.style.left = pos.x + 'px';
+                cloud.style.top = pos.y + 'px';
+                document.getElementById('levelPath').appendChild(cloud);
+            }
+        }
+
+        function createMushrooms() {
+            for(let i = 0; i < 20; i++) {
+                const mushroom = document.createElement('div');
+                mushroom.className = 'mushroom';
+                const pos = generateSafePosition();
+                mushroom.style.left = pos.x + 'px';
+                mushroom.style.top = pos.y + 'px';
+                document.getElementById('levelPath').appendChild(mushroom);
+            }
+        }
+
+        function createLevels() {
+            const levelCount = 20;
+            const currentLevel = 3;
+            const positions = [];
+
+            // 首先收集所有关卡位置
+            for(let i = 0; i < levelCount; i++) {
+                const t = i / (levelCount - 1);
+                const pos = calculatePointOnCurve(t);
+                positions.push(pos);
+                
+                // 创建关卡元素
+                const level = document.createElement('div');
+                const levelNumber = i + 1;
+                level.className = `level ${levelNumber > currentLevel ? 'locked' : ''}`;
+                level.style.left = (pos.x - 20) + 'px';
+                level.style.top = (pos.y - 20) + 'px';
+                level.textContent = levelNumber;
+                
+                document.getElementById('levelPath').appendChild(level);
+            }
+
+            // 创建SVG路径
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttribute("class", "level-path");
+            svg.setAttribute("width", "100%");
+            svg.setAttribute("height", "100%");
+
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            
+            // 构建路径数据
+            let pathData = `M ${positions[0].x} ${positions[0].y}`;
+            for(let i = 1; i < positions.length; i++) {
+                // 使用二次贝塞尔曲线创建平滑路径
+                const prevPos = positions[i-1];
+                const currentPos = positions[i];
+                const cpX = (prevPos.x + currentPos.x) / 2;
+                pathData += ` Q ${cpX} ${prevPos.y}, ${currentPos.x} ${currentPos.y}`;
+            }
+            
+            path.setAttribute("d", pathData);
+            svg.appendChild(path);
+            document.getElementById('levelPath').appendChild(svg);
+        }
+
+        // 初始化游戏界面
+        window.onload = function() {
+            createClouds();
+            createMushrooms();
+            createLevels();
+        };
+    </script>
+</body>
+</html>
