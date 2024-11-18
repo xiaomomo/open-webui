@@ -143,7 +143,7 @@ export const synthesizeSoVITSSpeech = async (
 
 	const url = `http://127.0.0.1:9880/?refer_wav_path=${encodeURIComponent("output/slicer_opt/blippi_sound.mp3_0000832320_0000957760.wav")}&
 	prompt_text=${encodeURIComponent("Yes, I know the quickest way. We can go to school, the shops, the zoo.")}&
-	prompt_language=en&text=${encodeURIComponent(text)}&text_language=en`;
+	prompt_language=en&text=${encodeURIComponent(text)}&text_language=en&speed=0.9`;
 
 	const res = await fetch(url, {
 		method: 'GET'
