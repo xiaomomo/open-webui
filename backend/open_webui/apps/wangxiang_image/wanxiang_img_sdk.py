@@ -62,44 +62,7 @@ if __name__ == '__main__':
     Generate detailed scene image descriptions based on the following screenplay scene:
 
 <screen>
-{
-            "sceneNumber": 3,
-            "location": "马棚",
-            "timeOfDay": "中午",
-            "screenContent": "小马回到了马棚，老马正坐在那里休息。马棚里依旧温暖而宁静。",
-            "playerBehavior": {
-                "dialogue": [
-                    {
-                        "character": "老马",
-                        "chinese": "怎么回来啦？"
-                    },
-                    {
-                        "character": "小马",
-                        "chinese": "一条河挡住了去路，我过不去。"
-                    },
-                    {
-                        "character": "老马",
-                        "chinese": "那条河不是很浅吗？"
-                    },
-                    {
-                        "character": "小马",
-                        "chinese": "是呀！牛伯伯也这么说。可是松鼠说河水很深，还淹死过他的伙伴呢！"
-                    },
-                    {
-                        "character": "老马",
-                        "chinese": "那么河水到底是深还是浅呢？你仔细想过他们的话吗？"
-                    },
-                    {
-                        "character": "小马",
-                        "chinese": "没...没想过。"
-                    },
-                    {
-                        "character": "老马",
-                        "chinese": "孩子，光听别人说，自己不动脑筋，不去试试，是不行的。河水是深是浅，你去试一试，就知道了。"
-                    }
-                ],
-                "actions": "小马低下了头，显得有些羞愧。老马则用温柔的眼神看着他。"
-            }
+
 </screen>
 
 Please create visual descriptions for each scene that include:

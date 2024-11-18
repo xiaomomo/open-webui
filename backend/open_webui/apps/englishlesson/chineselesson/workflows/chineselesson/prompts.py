@@ -182,108 +182,47 @@ Please respond in the following format:
 }}
 """
 
-prompt_generate_scene_img = """
-Generate detailed scene image descriptions based on the following screenplay scene:
+prompt_generate_core_info = """
+You’re an information extractor skilled in analyzing and summarizing narrative text. Your expertise lies in identifying key elements such as Subject, Environment, Activity, Emotion, Color Palette, and Lighting from various scenarios. 
 
-<screen>
-{
-            "sceneNumber": 3,
-            "location": "马棚",
-            "timeOfDay": "中午",
-            "screenContent": "小马回到了马棚，老马正坐在那里休息。马棚里依旧温暖而宁静。",
-            "playerBehavior": {
-                "dialogue": [
-                    {
-                        "character": "老马",
-                        "chinese": "怎么回来啦？"
-                    },
-                    {
-                        "character": "小马",
-                        "chinese": "一条河挡住了去路，我过不去。"
-                    },
-                    {
-                        "character": "老马",
-                        "chinese": "那条河不是很浅吗？"
-                    },
-                    {
-                        "character": "小马",
-                        "chinese": "是呀！牛伯伯也这么说。可是松鼠说河水很深，还淹死过他的伙伴呢！"
-                    },
-                    {
-                        "character": "老马",
-                        "chinese": "那么河水到底是深还是浅呢？你仔细想过他们的话吗？"
-                    },
-                    {
-                        "character": "小马",
-                        "chinese": "没...没想过。"
-                    },
-                    {
-                        "character": "老马",
-                        "chinese": "孩子，光听别人说，自己不动脑筋，不去试试，是不行的。河水是深是浅，你去试一试，就知道了。"
-                    }
-                ],
-                "actions": "小马低下了头，显得有些羞愧。老马则用温柔的眼神看着他。"
-            }
-</screen>
+Your task is to extract information from the provided text snippet. Here’s the input you need to analyze: 
+Here is one example:
 
-Please create visual descriptions for each scene that include:
+< input>
+{{  
+            "sceneNumber": 3,            "location": "马棚",  
+            "timeOfDay": "中午",  
+            "screenContent": "小马回到了马棚，老马正坐在那里休息。马棚里依旧温暖而宁静。",  
+            "playerBehavior": {{                "dialogue": [                    {{                        "character": "老马",  
+                        "chinese": "怎么回来啦？"  
+                    }},                    {{                        "character": "小马",  
+                        "chinese": "一条河挡住了去路，我过不去。"  
+                    }},                    {{                        "character": "老马",  
+                        "chinese": "那条河不是很浅吗？"  
+                    }},                    {{                        "character": "小马",  
+                        "chinese": "是呀！牛伯伯也这么说。可是松鼠说河水很深，还淹死过他的伙伴呢！"  
+                    }},                    {{                        "character": "老马",  
+                        "chinese": "那么河水到底是深还是浅呢？你仔细想过他们的话吗？"  
+                    }},                    {{                        "character": "小马",  
+                        "chinese": "没...没想过。"  
+                    }},                    {{                        "character": "老马",  
+                        "chinese": "孩子，光听别人说，自己不动脑筋，不去试试，是不行的。河水是深是浅，你去试一试，就知道了。"  
+                    }}                ],                "actions": "小马低下了头，显得有些羞愧。老马则用温柔的眼神看着他。"  
+            }}
+</input>
 
-1. Setting Elements:
-   - Physical environment and layout
-   - Time of day and lighting
-   - Props and relevant objects
-   - Cultural-specific details
+<output>
+- Subject: _老马和小马_
+- Environment: _马棚里_
+- Action/Activity: _聊天_
+- Mood/Emotion: _宁静，温柔_
+- Color Palette: _温暖_
+- Lighting: _温暖_
+- Style/Aesthetic: _卡通_
+</output>
 
-2. Character Visualization:
-   - Character positions and poses
-   - Detailed facial expressions showing emotional states
-   - Natural gestures and body language
-   - Culturally appropriate clothing and accessories
-   - Personal style and character-specific details
-
-3. Action Representation:
-   - Dynamic movement and natural interactions
-   - Emotional undertones in body language
-   - Key moments in the dialogue with emotional weight
-   - Visual cues for language learning
-   - Environmental interaction details
-
-4. Atmospheric Elements:
-   - Lighting and shadows
-   - Weather effects and time of day
-   - Ambient details (people in background, street noise, etc.)
-   - Mood-setting elements
-
-"""
-
-prompt_play_screenplay = """
-you are interactive Chinese language learning screenplay with the following parameters:
-
-<screenplay>
-{screenplay}
-</screenplay>
-
-Provide an interactive response that includes:
-
-1. Scene Presentation:
-   - Vivid, sensory description of the current situation
-   - Emotionally engaging dialogue with supporting characters
-   - Rich visual cues and cultural context
-   - Atmospheric details and mood setting
-
-2. Player Interaction:
-   - Emotionally nuanced choices that:
-     * Reflect different personality approaches
-     * Consider social and cultural implications
-     * Lead to meaningful relationship changes
-   - Clear consequences with emotional impact
-   - Contextual hints about cultural appropriateness
-
-3. Feedback:
-   - Immediate response to player's previous choice
-   - Correction of any language mistakes
-   - Positive reinforcement and encouragement
-   - Cultural insights when relevant
-   
-now there is a player, please start the screenplay.
+Now It's your time to extract information
+< input>
+{scene}
+</input>
 """
