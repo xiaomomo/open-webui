@@ -11,6 +11,8 @@ from prompts import *
 import logging
 from typing import Union
 import os
+from open_webui.apps.webui.models.fredisalesson import FredisaLessonForm, FredisaLessons
+from open_webui.apps.englishlesson.workflows.lesson_question.lesson_question import LessonQuestionWorkflow
 
 # Create logger instance
 logger = logging.getLogger(__name__)
@@ -74,6 +76,28 @@ class ScreenplayWorkflow(Workflow):
         except Exception as e:
             logger.error("Failed to review screenplay: %s", str(e))
             raise
+
+# maybe can you new table, for new form
+async def save_chinese_lesson(content):
+    fredisaLesson = FredisaLessonForm(
+        unit=content.get('title', ''),  # Assuming the result has a 'title' field
+        subject="Chinese",
+        content=content.get('raw_content', ''),
+        lesson_json=content,
+        question_json="",
+        lesson_img=""
+    )
+
+    # Generate questions using the LessonQuestionWorkflow
+    w = LessonQuestionWorkflow(timeout=120, verbose=False)
+    question_json = await w.run(origin_content=fredisaLesson.lesson_json)
+    print(f"workflow generate question_json:{question_json}")
+    fredisaLesson.question_json = question_json
+
+    # Save to database
+    lesson = FredisaLessons.insert_new_lesson(fredisaLesson)
+    return lesson
+
 async def main():
     print("Starting main workflow execution")
     # Test content
@@ -124,6 +148,7 @@ async def main():
 
         # Parse and print the result
         print(f"Workflow completed successfully:{result}")
+        await save_chinese_lesson(result)
         
     except Exception as e:
         logger.error("Workflow failed: %s", str(e))

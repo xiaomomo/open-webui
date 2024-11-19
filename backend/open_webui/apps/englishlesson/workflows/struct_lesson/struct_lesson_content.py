@@ -8,10 +8,9 @@ from llama_index.core.workflow import (
 
 from .schemas import *
 from .prompts import *
-from llama_index.llms.ollama import Ollama
 import json
+from dashscope import Generation
 
-llm = Ollama(model="llama3:8b", request_timeout=500.0)
 
 
 # workflow step:
@@ -48,14 +47,26 @@ class StructLessonWorkflow(Workflow):
     @step
     async def step_struct_content(self, ev: StartStructLessonEvent) -> StartJsonLessonEvent:
         prompt = f"{parse_lesson_content.format(content=ev.origin_content)}"
-        responseText = llm.complete(prompt).text
+        response = Generation.call(
+            model='qwen-max',
+            messages=[
+                {'role': 'user', 'content': prompt}
+            ]
+        )
+        responseText = response.output.text
         print(f"step_struct_content response: {responseText}")
         return StartJsonLessonEvent(jsonUnitContent=responseText, origin_content=ev.origin_content)
 
     @step
     async def step_json_content(self, ev: StartJsonLessonEvent) -> FinishStructLessonEvent | StartEvent:
         prompt = f"{json_lesson_content.format(content=ev.jsonUnitContent)}"
-        responseText = llm.complete(prompt).text
+        response = Generation.call(
+            model='qwen-max',
+            messages=[
+                {'role': 'user', 'content': prompt}
+            ]
+        )
+        responseText = response.output.text
         print(f"step_struct_content response: {responseText}")
         try:
             lessonUnit = self.parse_lesson_unit(responseText)
@@ -71,19 +82,26 @@ class StructLessonWorkflow(Workflow):
     @step
     async def step_review_struct_event(self,
                                        ev: FinishStructLessonEvent) -> StartJsonLessonEvent | SaveStructLessonEvent:
-        lesson_dict = ev.lessonUnit.to_dict()
-        origin_content = lesson_dict['origin_content']
-        lesson_dict.pop("origin_content", None)  # 移除 'origin_content' 属性
-        json_str = json.dumps(lesson_dict, indent=4)
-        prompt = f"{review_parse_lesson_content.format(origin_content=origin_content, content_json=json_str)}"
-        responseText = llm.complete(prompt).text
-        print(f"step_review_struct_event input:{prompt} \n response: {responseText}")
-        if "true" in responseText:
-            print("json content same as origin content")
-            return SaveStructLessonEvent(lessonUnit=ev.lessonUnit)
-        else:
-            print("json content not same as origin content, repeat from start")
-            return StartEvent(origin_content=origin_content)
+        # lesson_dict = ev.lessonUnit.to_dict()
+        # origin_content = lesson_dict['origin_content']
+        # lesson_dict.pop("origin_content", None)  # 移除 'origin_content' 属性
+        # json_str = json.dumps(lesson_dict, indent=4)
+        # prompt = f"{review_parse_lesson_content.format(origin_content=origin_content, content_json=json_str)}"
+        # response = Generation.call(
+        #     model='qwen-max',
+        #     messages=[
+        #         {'role': 'user', 'content': prompt}
+        #     ]
+        # )
+        # responseText = response.output.text
+        # print(f"step_review_struct_event input:{prompt} \n response: {responseText}")
+        # if "true" in responseText:
+        #     print("json content same as origin content")
+        #     return SaveStructLessonEvent(lessonUnit=ev.lessonUnit)
+        # else:
+        #     print("json content not same as origin content, repeat from start")
+        #     return StartEvent(origin_content=origin_content)
+        return SaveStructLessonEvent(lessonUnit=ev.lessonUnit)
 
     @step
     async def step_save_content(self, ev: SaveStructLessonEvent) -> StopEvent:

@@ -98,12 +98,12 @@ async def complateresponse(form_data: GameResponse):
 
         Make the response fun, engaging, and suitable for kids learning English through My Little Pony adventures."""
 
+        print(f"lesson game Prompt: {prompt}")
         try:
             # Call DashScope API with error handling
             response = Generation.call(
-                model='qwen-plus',
+                model='qwen-max',
                 messages=[
-                    {'role': 'system', 'content': 'You are a My Little Pony English learning game assistant for kids. Provide responses in valid JSON format only.'},
                     {'role': 'user', 'content': prompt}
                 ]
             )

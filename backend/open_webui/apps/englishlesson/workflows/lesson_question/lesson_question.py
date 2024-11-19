@@ -8,12 +8,11 @@ from llama_index.core.workflow import (
 )
 
 from .prompts import *
-from llama_index.llms.ollama import Ollama
 import json
 
 LESSON_JSON = "lesson_json"
 
-llm = Ollama(model="llama3:8b", request_timeout=500.0)
+from dashscope import Generation
 
 
 # workflow step:
@@ -49,7 +48,13 @@ class LessonQuestionWorkflow(Workflow):
     async def step_generate_question(self, ctx: Context,ev: StartGenerateQuestionEvent) -> StartQuestionJsonEvent:
         lesson_json = await ctx.get(LESSON_JSON);
         prompt = f"{DESIGN_QUESTION.format(course_content=lesson_json)}"
-        responseText = llm.complete(prompt).text
+        response = Generation.call(
+            model='qwen-max',
+            messages=[
+                {'role': 'user', 'content': prompt}
+            ]
+        )
+        responseText = response.output.text
         print(f"step_generate_question response: {responseText}")
         return StartQuestionJsonEvent(question_json=responseText)
 
@@ -57,14 +62,26 @@ class LessonQuestionWorkflow(Workflow):
     async def step_parse_json_content(self, ev: StartQuestionJsonEvent) -> CheckJsonEvent:
         prompt = f"{STRUCT_QUESTION.format(question_json=ev.question_json)}"
         print(f"step_json_content prompt prompt prompt prompt: {prompt}")
-        responseText = llm.complete(prompt).text
+        response = Generation.call(
+            model='qwen-max',
+            messages=[
+                {'role': 'user', 'content': prompt}
+            ]
+        )
+        responseText = response.output.text
         print(f"step_struct_content response: {responseText}")
         return CheckJsonEvent(question_json=responseText)
 
     @step
     async def step_check_json_content(self, ev: CheckJsonEvent) -> SaveQuestionEvent | StartGenerateQuestionEvent:
         prompt = f"{JSON_LESSON_CONTENT.format(content=ev.question_json)}"
-        responseText = llm.complete(prompt).text
+        response = Generation.call(
+            model='qwen-max',
+            messages=[
+                {'role': 'user', 'content': prompt}
+            ]
+        )
+        responseText = response.output.text
         print(f"step_struct_content response: {responseText}")
         try:
             json.loads(responseText)

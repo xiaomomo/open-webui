@@ -100,16 +100,31 @@ async def savePdfContent(text_content):
 
 
 if __name__ == "__main__":
-    input_file = "level5.pdf"
+    pdf_directory = "enlishlessonpdf"
 
-    if os.path.exists(input_file):
+    # Check if directory exists
+    if not os.path.exists(pdf_directory):
+        print(f"Directory {pdf_directory} does not exist")
+        sys.exit(1)
+
+    # Get all PDF files in the directory
+    pdf_files = [f for f in os.listdir(pdf_directory) if f.endswith('.pdf')]
+
+    if not pdf_files:
+        print(f"No PDF files found in {pdf_directory}")
+        sys.exit(1)
+
+    # Process each PDF file
+    for pdf_file in pdf_files:
+        input_file = os.path.join(pdf_directory, pdf_file)
+        print(f"\nProcessing {input_file}...")
+
         text_content = process_pdf(input_file)
         if text_content:
-            # 移除多余的空白行
+            # Remove extra whitespace lines
             text_content = '\n'.join(line for line in text_content.splitlines() if line.strip())
-            print("提取的文本内容:")
+            print("Extracted text content:")
             print(text_content)
             asyncio.run(savePdfContent(text_content))
-
-    else:
-        print("输入文件不存在")
+        else:
+            print(f"Failed to process {input_file}")
