@@ -16,13 +16,13 @@ Requirements:
 
 2. Characters:
    - One main player (the language learner)
-   - 2-3 recurring supporting characters who:
+   - 1-5 recurring supporting characters who:
      * Have distinct personalities and backgrounds
      * Develop relationships with the player
      * Use consistent speech patterns
      * Appear across multiple scenes
    - Each character profile includes:
-     * Name and age
+     * Name
      * Personality traits and quirks
      * Background story
      * Relationship to other characters
@@ -31,12 +31,9 @@ Requirements:
 3. Scene Design:
    Each scene must include:
    - screenContent: 
-     * Detailed environment descriptions
-     * Time and location context
-     * Atmosphere and mood setting
-     * Cultural elements naturally woven in
+     * Detailed environment descriptions, include:Time and location context/Atmosphere and mood setting/Cultural elements naturally woven in
    - playerBehavior: 
-     * Natural dialogue progression
+     * Natural dialogue progression, the dialogue content need Complete and self-consistent
      * Character interactions that build relationships
      * Non-verbal communication
      * Cultural context and social dynamics
@@ -88,7 +85,7 @@ Output Format:
                 "dialogue": [
                     {{
                         "character": "Speaker name",
-                        "chinese": "Chinese text"
+                        "content": "the content character say"//the content Complete and self-consistent
                     }}
                 ],
                 "actions": "Detailed description of actions and body language"
@@ -96,7 +93,7 @@ Output Format:
             "playerChoice": [
                 {{
                     "option": "Choice identifier",
-                    "chinese": "Chinese text",
+                    "content": "Choice content",
                     "consequence": "Immediate and future impact of this choice"
                 }}
             ]
@@ -132,7 +129,7 @@ Remember to:
 4. Create memorable character interactions
 5. Include cultural elements naturally within the story
 6. Make sure the story reaches a satisfying conclusion
-7. all Characters come from the content, the player will choose a Characters to play
+7. all Characters come from the content
 """
 
 prompt_review_screenplay = """

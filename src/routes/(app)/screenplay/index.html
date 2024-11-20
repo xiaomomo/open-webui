@@ -1,0 +1,840 @@
+<div class="game-container">
+    <!-- 系统消息区域 -->
+    <div class="system-message">
+        <div class="message-bubble">
+            <p id="systemMessage">神秘的图书馆里，一本会说话的魔法书正在等待小朋友的到来...</p>
+        </div>
+    </div>
+
+    <!-- 主要游戏区域 -->
+    <div class="game-scene">
+        <!-- 场景背景 -->
+        <div class="scene-background">
+            <img id="sceneImage" src="/images/scene1.jpg" alt="游戏场景">
+        </div>
+
+        <!-- NPC区域 -->
+        <div class="npc-area">
+            
+        </div>
+
+        <!-- 玩家区域 -->
+        <div class="player-area">
+            <div class="character player">
+                <img src="/images/player.png" alt="玩家角色">
+                <div class="speech-bubble hidden" id="playerResponse">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 对话选项区域 -->
+    <div class="dialog-options">
+        <button class="option-button" onclick="selectOption(1)">是的！我最喜欢冒险了！</button>
+        <button class="option-button" onclick="selectOption(2)">可是...冒险会不会有点可怕呀？</button>
+        <button class="option-button" onclick="selectOption(3)">皮皮，你可以告诉我这是什么地方吗？</button>
+    </div>
+</div>
+
+<script>
+let characters = {}; // 将由JSON数据填充
+
+const dialogFlow = {
+    start: {  // 初始状态
+        activeNPC: "狼",
+        playerResponse: "",
+        npcResponse: "哎，乖乖，快来，让我看看你。",
+        systemMessage: "小红帽来到了奶奶的房子...",
+        options: [
+            "奶奶，你的耳朵怎么这样大呀？",
+            "奶奶，你的眼睛怎么这样大呀？",
+            "奶奶，你的手怎么这样大呀？"
+        ],
+        nextScene: "question1"
+    },
+    question1: {
+        activeNPC: "狼",
+        playerResponse: "奶奶，你的耳朵怎么这样大呀？",
+        npcResponse: "为了更好地听你说话呀，乖乖。",
+        systemMessage: "小红帽觉得奶奶有些奇怪...",
+        options: [
+            "奶奶，你的眼睛怎么这样大呀？",
+            "奶奶，你的手怎么这样大呀？",
+            "奶奶，你的嘴巴怎么大得很吓人呀？"
+        ],
+        nextScene: "question2"
+    },
+    question2: {
+        activeNPC: "狼",
+        playerResponse: "奶奶，你的眼睛怎么这样大呀？",
+        npcResponse: "为了更清楚地看你呀，乖乖。",
+        systemMessage: "小红帽越来越觉得不对劲...",
+        options: [
+            "奶奶，你的手怎么这样大呀？",
+            "奶奶，你的嘴巴怎么大得很吓人呀？",
+            "我想我该走了..."
+        ],
+        nextScene: "final"
+    },
+    final: {
+        activeNPC: "狼",
+        playerResponse: "奶奶，你的嘴巴怎么大得很吓人呀？",
+        npcResponse: "可以一口把你吃掉呀！",
+        systemMessage: "狼露出了真面目！",
+        options: [
+            "察觉不对劲，立刻逃跑",
+            "继续靠近，试图了解情况"
+        ],
+        nextScene: "end"
+    }
+};
+
+function selectOption(optionId) {
+    const dialog = dialogFlow[optionId] || dialogFlow.start;  // 如果找不到对应选项，使用开始状态
+    
+    // 移除所有NPC的激活状态
+    document.querySelectorAll('.npc').forEach(npc => {
+        npc.classList.remove('active');
+    });
+    
+    // 激活当前说话的NPC
+    if (dialog.activeNPC) {
+        const activeNPC = document.getElementById(dialog.activeNPC);
+        if (activeNPC) {  // 添加检查
+            activeNPC.classList.add('active');
+            
+            // 更新NPC对话
+            const speechBubble = activeNPC.querySelector('.speech-bubble p');
+            if (speechBubble) {  // 添加检查
+                speechBubble.textContent = dialog.npcResponse;
+            }
+        }
+    }
+    
+    // 更新玩家回应
+    const playerBubble = document.getElementById('playerResponse');
+    if (playerBubble) {  // 添加检查
+        playerBubble.textContent = dialog.playerResponse;
+        playerBubble.parentElement.classList.remove('hidden');
+    }
+    
+    // 更新系统消息
+    const systemMessage = document.getElementById('systemMessage');
+    if (systemMessage) {  // 添加检查
+        systemMessage.textContent = dialog.systemMessage;
+    }
+    
+    // 更新对话选项
+    const optionsContainer = document.querySelector('.dialog-options');
+    if (optionsContainer && dialog.options) {  // 添加检查
+        optionsContainer.innerHTML = dialog.options.map((text, index) => `
+            <button class="option-button" onclick="selectOption('${dialog.nextScene || 'start'}')">${text}</button>
+        `).join('');
+    }
+}
+
+// 初始化对话
+window.addEventListener('load', () => {
+    selectOption('start');
+});
+
+// Mock API response
+async function fetchScreenplayData() {
+    // 模拟网络延迟
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    return {
+        title: "小红帽的语言之旅",
+        difficulty: "Beginner",
+        mainCharacters: [
+            {
+                isPlayer: true,
+                name: "小红帽",
+                role: "主人公，语言学习者",
+                background: "一个可爱的小姑娘，喜欢戴奶奶送给她的红色丝绒帽子。她善良、天真，但有时会有些粗心。",
+                personality: "活泼、好奇、善良、有点天真",
+                languageLevel: "初学者"
+            },
+            {
+                name: "妈妈",
+                role: "小红帽的母亲，给予指导和支持",
+                background: "一个细心而慈爱的母亲，总是关心小红帽的安全和成长。",
+                personality: "温柔、细心、有责任感",
+                languageLevel: "母语水平"
+            },
+            {
+                name: "狼",
+                role: "反派角色，试图欺骗小红帽",
+                background: "一只狡猾的狼，善于伪装和欺骗。",
+                personality: "狡猾、贪婪、善于伪装",
+                languageLevel: "中等"
+            },
+            {
+                name: "猎人",
+                role: "救，帮助小红帽和奶奶脱离危险",
+                background: "一个勇敢且富有正义感的猎人，经常在森林里巡逻。",
+                personality: "勇敢、正义、机智",
+                languageLevel: "高级"
+            }
+        ]
+    };
+}
+
+async function initializeGame() {
+    try {
+        const data = await fetchScreenplayData();
+        
+        // 更新页面标题
+        document.title = data.title;
+        
+        // 更新系统消息
+        document.querySelector('#systemMessage').textContent = 
+            `欢迎来到《${data.title}》！难度级别：${data.difficulty}`;
+        
+        // 清除现有的NPC区域和玩家区域
+        const npcArea = document.querySelector('.npc-area');
+        const playerArea = document.querySelector('.player-area');
+        npcArea.innerHTML = '';
+        playerArea.innerHTML = '';
+        
+        // 处理所有角色
+        data.mainCharacters.forEach((char, index) => {
+            const charDiv = document.createElement('div');
+            charDiv.className = `character ${char.isPlayer ? 'player' : 'npc'}`;
+            charDiv.id = char.name;
+            
+            if (!char.isPlayer) {
+                // 移动端垂直位置调整
+                charDiv.style.left = "5%";
+                charDiv.style.top = `${(index * 25)}%`;
+            } else {
+                // 玩家位置固定在右侧
+                charDiv.style.right = "10%";
+                charDiv.style.top = "40%";
+            }
+            
+            charDiv.innerHTML = `
+                <img src="/images/${char.name}.png" alt="${char.name}">
+                <div class="speech-bubble ${char.isPlayer ? 'hidden' : ''}" ${char.isPlayer ? 'id="playerResponse"' : ''}>
+                    <p>${char.background}</p>
+                </div>
+            `;
+            
+            // 根据是否是玩家添加到不同区域
+            if (char.isPlayer) {
+                playerArea.appendChild(charDiv);
+            } else {
+                npcArea.appendChild(charDiv);
+            }
+        });
+    } catch (error) {
+        console.error('Failed to initialize game:', error);
+    }
+}
+
+// 在页面加载时调用初始化函数
+window.addEventListener('load', initializeGame);
+
+// 对话管理系统
+const dialogueSystem = {
+    currentIndex: 0,
+    dialogueSequence: [],
+    
+    initializeDialogue(dialogueData) {
+        this.dialogueSequence = dialogueData;
+        this.currentIndex = 0;
+        this.showNextDialogue();
+    },
+    
+    showNextDialogue() {
+        if (this.currentIndex >= this.dialogueSequence.length) {
+            // 对话结束，显示选项
+            this.showChoices();
+            return;
+        }
+        
+        const dialogue = this.dialogueSequence[this.currentIndex];
+        const character = dialogue.character;
+        const content = dialogue.content;
+        
+        // 移除所有NPC的激活状态
+        document.querySelectorAll('.character').forEach(char => {
+            char.classList.remove('active');
+            char.querySelector('.speech-bubble').style.opacity = '0';
+        });
+        
+        // 激活说话的角色
+        let speakingChar;
+        if (character === "小红帽") {
+            speakingChar = document.querySelector('.character.player');
+            document.getElementById('playerResponse').textContent = content;
+            document.getElementById('playerResponse').parentElement.classList.remove('hidden');
+        } else {
+            // 处理狼装扮成奶奶的特殊情况
+            const charId = character.includes("狼") ? "狼" : character;
+            speakingChar = document.getElementById(charId);
+            speakingChar.querySelector('.speech-bubble p').textContent = content;
+        }
+        
+        speakingChar.classList.add('active');
+        speakingChar.querySelector('.speech-bubble').style.opacity = '1';
+        
+        this.currentIndex++;
+    },
+    
+    showChoices() {
+        // 显示选项按钮
+        const optionsContainer = document.querySelector('.dialog-options');
+        optionsContainer.innerHTML = scene.playerChoice.map(choice => `
+            <button class="option-button" onclick="selectChoice('${choice.option}')">
+                ${choice.content}
+            </button>
+        `).join('');
+    }
+};
+
+// 选择选项的处理函数
+function selectChoice(option) {
+    const choice = scene.playerChoice.find(c => c.option === option);
+    if (choice) {
+        // 更新系统消息显示结果
+        document.querySelector('#systemMessage').textContent = choice.consequence;
+    }
+}
+
+// 初始化场景
+function initializeScene(scene) {
+    // 更新系统消息
+    document.querySelector('#systemMessage').textContent = scene.screenContent;
+    
+    // 初始化对话系统
+    dialogueSystem.initializeDialogue(scene.playerBehavior.dialogue);
+    
+    // 添加点击事件监听器来推进对话
+    document.addEventListener('click', function(e) {
+        // 如果点击的不是选项按钮，则推进对话
+        if (!e.target.classList.contains('option-button')) {
+            dialogueSystem.showNextDialogue();
+        }
+    });
+}
+
+// 使用示例：
+const scene = {
+            "sceneNumber": 3,
+            "location": "奶奶的房子",
+            "timeOfDay": "中午",
+            "screenContent": "小红帽终于来到奶奶的房子，发现门是敞开的。她感到有些奇怪，但还是走了进去。",
+            "playerBehavior": {
+                "dialogue": [
+                    {
+                        "character": "小红帽",
+                        "content": "早上好！"
+                    },
+                    {
+                        "character": "狼（装扮成奶奶）",
+                        "content": "哎，乖乖，快来，让我看看你。"
+                    },
+                    {
+                        "character": "小红帽",
+                        "content": "奶奶，你的耳朵怎么这样大呀？"
+                    },
+                    {
+                        "character": "狼（装扮成奶奶）",
+                        "content": "为了更好地听你说话呀，乖乖。"
+                    },
+                    {
+                        "character": "小红帽",
+                        "content": "可是奶奶，你的眼睛怎么这样大呀？"
+                    },
+                    {
+                        "character": "狼（装扮成奶奶）",
+                        "content": "为了更清楚地看你呀，乖乖。"
+                    },
+                    {
+                        "character": "小红帽",
+                        "content": "奶奶，你的手怎么这样大呀？"
+                    },
+                    {
+                        "character": "狼（装扮成奶奶）",
+                        "content": "可以更好地抱着你呀。"
+                    },
+                    {
+                        "character": "小红帽",
+                        "content": "奶奶，你的嘴巴怎么大得很吓人呀？"
+                    },
+                    {
+                        "character": "狼（装扮成奶奶）",
+                        "content": "可以一口把你吃掉呀！"
+                    }
+                ],
+                "actions": "小红帽一步步靠近床边，最终被狼吞进了肚子。"
+            },
+            "playerChoice": [
+                {
+                    "option": "A",
+                    "content": "察觉不对劲，立刻逃跑。",
+                    "consequence": "成功逃脱，找到猎人求助。"
+                },
+                {
+                    "option": "B",
+                    "content": "继续靠近，试图了解情况。",
+                    "consequence": "被狼吞进肚子。"
+                }
+            ]
+        };
+
+// 初始化场景
+initializeScene(scene);
+</script>
+
+<style>
+/* 基础字体大小设置 */
+html {
+    font-size: 16px;
+}
+
+.game-container {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(120deg, #f6f9fc 0%, #e9f2ff 100%);
+    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    padding: 10px;
+    gap: 10px;
+}
+
+.system-message {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 0.5em;
+    border-radius: 10px;
+    /* box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1); */
+    /* backdrop-filter: blur(8px); */
+    /* border: 1px solid rgba(255, 255, 255, 0.4); */
+}
+
+.message-bubble {
+    font-size: 1.2em;
+    color: #1a365d;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.game-scene {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 24px;
+    padding: 20px;
+    position: relative;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    overflow: hidden;
+}
+
+.scene-background img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.character {
+    position: absolute;
+    width: 80px; /* 移动端更小的尺寸 */
+    height: 80px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.character img {
+    width: 120px;
+    height: 120px;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15));
+}
+
+.npc-area {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+}
+
+.player-area {
+    position: absolute;
+    right: 20%;
+    top: 40%;
+}
+
+.speech-bubble {
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    padding: 1em 1.5em;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    min-width: 12.5em;
+    max-width: 18.75em;
+    font-size: 1em; /* 16px */
+    z-index: 100;
+}
+
+.speech-bubble:after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: -10px;
+    transform: translateY(-50%);
+    border-width: 10px 10px 10px 0;
+    border-style: solid;
+    border-color: transparent white transparent transparent;
+}
+
+.hidden {
+    display: none;
+}
+
+.dialog-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+    backdrop-filter: blur(8px);
+}
+
+.option-button {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    color: white;
+    border: none;
+    padding: 16px 24px;
+    border-radius: 16px;
+    font-size: 1.1em;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
+    cursor: pointer;
+}
+
+.option-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+}
+
+@keyframes bounce {
+    0% { transform: translateY(-10px); }
+    100% { transform: translateY(0); }
+}
+
+@keyframes popIn {
+    0% { 
+        transform: scale(0);
+        opacity: 0;
+    }
+    100% { 
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.npc {
+    transition: all 0.5s ease-out;
+}
+
+.npc img {
+    width: 120px;
+    height: 120px;
+    object-fit: contain;
+}
+
+.npc.hidden {
+    opacity: 0;
+    transform: scale(0);
+}
+
+/* 为不同NPC设置不同的样式 */
+#magicBook img {
+    filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.6));
+}
+
+#fairy img {
+    filter: drop-shadow(0 0 20px rgba(255, 182, 193, 0.6));
+}
+
+#wizard img {
+    filter: drop-shadow(0 0 20px rgba(147, 112, 219, 0.6));
+}
+
+.character.active {
+    transform: scale(1.1);
+    z-index: 10;
+}
+
+.character.active img {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.speech-bubble {
+    transition: all 0.3s ease;
+}
+
+/* 添加角色切换动画 */
+@keyframes characterEnter {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.character {
+    animation: characterEnter 0.5s ease-out;
+}
+
+/* 更新NPC相关样式 */
+.npc-area {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+}
+
+.character.npc {
+    position: absolute;
+    width: 100px;  /* 增加默认尺寸 */
+    height: 100px;
+    transition: all 0.5s ease;
+}
+
+.character.npc img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transition: all 0.3s ease;
+}
+
+/* 说话状态 */
+.character.npc.active {
+    width: 160px;  /* 说话时放大 */
+    height: 160px;
+    z-index: 10;
+}
+
+/* 不说话状态的样式 */
+.character.npc:not(.active) {
+    opacity: 0.7;
+    transform: scale(0.8);  /* 默认稍微缩小 */
+}
+
+/* 对话气泡样式 */
+.speech-bubble {
+    position: absolute;
+    top: 50%;
+    left: 120%;
+    transform: translateX(30%);
+    background: white;
+    border-radius: 15px;
+    padding: 10px 15px;
+    min-width: 200px;
+    text-align: center;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    opacity: 0;  /* 默认隐藏 */
+    transition: all 0.3s ease;
+    pointer-events: none;  /* 防止气泡影响交互 */
+}
+
+/* 说话状态下显示对话气泡 */
+.character.npc.active .speech-bubble {
+    opacity: 1;
+    transform: translateX(60%);
+}
+
+.speech-bubble:after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: -10px;
+    transform: translateY(-50%);
+    border-width: 10px 10px 10px 0;
+    border-style: solid;
+    border-color: transparent white transparent transparent;
+}
+
+/* 为每个NPC设置独特的视觉效果 */
+#magicBook img {
+    filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.6));
+}
+
+#fairy img {
+    filter: drop-shadow(0 0 15px rgba(255, 182, 193, 0.6));
+}
+
+#wizard img {
+    filter: drop-shadow(0 0 15px rgba(147, 112, 219, 0.6));
+}
+
+/* 入场动画 */
+@keyframes slideIn {
+    0% {
+        opacity: 0;
+        transform: translateX(-50px) scale(0.8);
+    }
+    100% {
+        opacity: 0.7;
+        transform: translateX(0) scale(0.8);
+    }
+}
+
+.character.npc {
+    animation: slideIn 0.8s ease-out forwards;
+}
+
+#magicBook { animation-delay: 0s; }
+#fairy { animation-delay: 0.2s; }
+#wizard { animation-delay: 0.4s; }
+
+/* 添加轻微的悬浮效果 */
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+.character.npc:not(.active) img {
+    animation: float 3s ease-in-out infinite;
+}
+
+/* 当NPC被激活时的放大效果 */
+.character.npc.active {
+    transform: scale(1.3);
+    z-index: 10;
+}
+
+.character.npc.active .speech-bubble {
+    transform: translateX(60%) scale(1);
+}
+
+/* 媒体查询适配不同屏幕 */
+@media screen and (max-width: 768px) {
+    html {
+        font-size: 22px; /* 移动端基准字体增大 */
+    }
+    
+    .character {
+        width: 60px; /* 更小的角色尺寸 */
+        height: 60px;
+    }
+    
+    .speech-bubble {
+        min-width: 10em;
+        max-width: 14em;
+        padding: 0.8em 1em;
+        font-size: 1.1em;
+    }
+    
+    /* 调整NPC位置 */
+    .character.npc {
+        left: 10% !important; /* 靠左一些 */
+    }
+    
+    /* 调整玩家位置 */
+    .character.player {
+        right: 10%;
+        left: auto !important;
+    }
+    
+    .message-bubble {
+        font-size: 1.2em; /* 相对于18px的基准 */
+    }
+    
+    .option-button {
+        padding: 0.8em 1em;
+        font-size: 1.2em;
+        min-height: 3.2em;
+    }
+}
+
+/* 处理特别小的屏幕 */
+@media screen and (max-width: 320px) {
+    html {
+        font-size: 22px; /* 小屏幕调整基准字体 */
+    }
+    
+    .character {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .speech-bubble {
+        min-width: 10em;
+        max-width: 13em;
+        font-size: 1em;
+    }
+    
+    .option-button {
+        font-size: 1.1em;
+        min-height: 3em;
+    }
+}
+
+/* 处理横屏 */
+@media screen and (orientation: landscape) and (max-height: 500px) {
+    .system-message {
+        height: 40px;
+    }
+    
+    .dialog-options {
+        padding: 5px;
+    }
+    
+    .option-button {
+        padding: 8px 15px;
+    }
+}
+
+/* 优化对话气泡位置 */
+.character.npc .speech-bubble {
+    left: 120%;
+}
+
+.character.player .speech-bubble {
+    right: 120%;
+    left: auto;
+}
+
+/* 添加过渡动画 */
+.speech-bubble {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    opacity: 0;
+    transform: translateX(20px);
+}
+
+.character.active .speech-bubble {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* 大屏幕适配 */
+@media screen and (min-width: 1200px) {
+    html {
+        font-size: 20px; /* 大屏幕基准字体增大 */
+    }
+}
+</style>

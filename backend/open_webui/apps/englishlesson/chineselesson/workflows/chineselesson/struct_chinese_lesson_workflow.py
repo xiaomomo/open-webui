@@ -11,7 +11,10 @@ from prompts import *
 import logging
 from typing import Union
 import os
-from open_webui.apps.webui.models.fredisalesson import FredisaLessonForm, FredisaLessons
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../../../')))
+from open_webui.apps.webui.models.fredisalesson import FredisaLessonForm, FredisaLessonModel, FredisaLessons
+
 from open_webui.apps.englishlesson.workflows.lesson_question.lesson_question import LessonQuestionWorkflow
 
 # Create logger instance
@@ -54,28 +57,30 @@ class ScreenplayWorkflow(Workflow):
     @step
     async def step_review_screenplay(self, ev: ReviewScreenplayEvent) -> Union[GenerateScreenplayEvent | StopEvent]:
         print("Reviewing generated screenplay")
-        prompt = prompt_review_screenplay.format(
-            screenplay=ev.screenplay, 
-            original_content=ev.original_content
-        )
-        try:
-            response = Generation.call(
-                model='qwen-max',
-                messages=[
-                    {'role': 'user', 'content': prompt}
-                ]
-            )
-            review_result = response.output.text
-            print(f"Review result: {review_result}")
-            
-            if "approved" in review_result.lower():
-                print("Screenplay approved, proceeding to scene generation")
-                return StopEvent(result=review_result)
-            print("Screenplay needs revision, generating new version")
-            return GenerateScreenplayEvent(content=ev.original_content)
-        except Exception as e:
-            logger.error("Failed to review screenplay: %s", str(e))
-            raise
+        # prompt = prompt_review_screenplay.format(
+        #     screenplay=ev.screenplay,
+        #     original_content=ev.original_content
+        # )
+        # try:
+        #     response = Generation.call(
+        #         model='qwen-max',
+        #         messages=[
+        #             {'role': 'user', 'content': prompt}
+        #         ]
+        #     )
+        #     review_result = response.output.text
+        #     print(f"Review result: {review_result}")
+        #
+        #     if "approved" in review_result.lower():
+        #         print("Screenplay approved, proceeding to scene generation")
+        #         return StopEvent(result=review_result)
+        #     print("Screenplay needs revision, generating new version")
+        #     return GenerateScreenplayEvent(content=ev.original_content)
+        # except Exception as e:
+        #     logger.error("Failed to review screenplay: %s", str(e))
+        #     raise
+        print("Screenplay approved, proceeding to scene generation")
+        return StopEvent(result=ev.screenplay)
 
 # maybe can you new table, for new form
 async def save_chinese_lesson(content):
@@ -148,7 +153,7 @@ async def main():
 
         # Parse and print the result
         print(f"Workflow completed successfully:{result}")
-        await save_chinese_lesson(result)
+        # await save_chinese_lesson(result)
         
     except Exception as e:
         logger.error("Workflow failed: %s", str(e))
