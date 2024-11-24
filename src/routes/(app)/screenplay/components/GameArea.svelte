@@ -3,27 +3,22 @@
 
     export let messages = [];
     export let activeCharacter = null;
+    export let characters = [];
+    export let mainPlayer = '';
     export let onCharacterClick;
-    export let characters;
-    export let mainPlayer;
 </script>
 
 <div class="game-area">
-    <div class="npc-section">
-        {#each characters.filter(char => char.isMainPlayer === "false") as character}
+    <div class="characters">
+        {#each characters as character}
             <Character
                 character={character.name}
-                isActive={activeCharacter === character.name}
-                messages={messages.filter(m => m.type === 'npc' && m.character === character.name)}
+                isActive={character.name === activeCharacter}
+                messages={messages.filter(m => m.character === character.name)}
+                {mainPlayer}
                 on:click={() => onCharacterClick(character.name)}
             />
         {/each}
-    </div>
-    <div class="player-section">
-        <Character
-            character={mainPlayer}
-            messages={messages.filter(m => m.type === 'player')}
-        />
     </div>
 </div>
 
@@ -33,6 +28,32 @@
         flex: 1;
         padding: 20px;
         gap: 20px;
+        height: 60vh;
+        overflow-y: auto;
+    }
+
+    .characters {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .game-area::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .game-area::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+    }
+
+    .game-area::-webkit-scrollbar-thumb {
+        background: rgba(255, 105, 180, 0.5);
+        border-radius: 4px;
+    }
+
+    .game-area::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 105, 180, 0.7);
     }
 
     .npc-section {

@@ -15,6 +15,8 @@
     let responses = {};
     let currentSceneIndex = 0;
     let isLoading = true;
+    let showInputSection = false;
+    let playerChoices = [];
 
     async function fetchScreenplay() {
         isLoading = true;
@@ -30,6 +32,7 @@
             const firstScene = screenplay.scenes.find(scene => scene.sceneNumber === 1);
             if (firstScene) {
                 hostMessage = firstScene.screenContent;
+                playerChoices = firstScene.playerChoice || [];
                 displaySceneDialogues(firstScene);
             }
             
@@ -84,17 +87,28 @@
         hostMessage = `${character}说话了！让我们听听看...`;
     }
 
-    function handleOptionClick(option) {
-        const targetNPC = option.includes('喵喵') ? '喵喵' : 
-                         option.includes('旺旺') ? '旺旺' : '兔兔';
-        
-        messages = [...messages, { type: 'player', text: option }];
-        hostMessage = '这是个有趣的观点！';
+    function handleOptionClick(choice) {
+        messages = [...messages, { 
+            type: 'player', 
+            text: `${choice.option}: ${choice.content}`
+        }];
+        hostMessage = choice.consequence;
 
-        setTimeout(() => {
-            const response = getNextResponse(targetNPC);
-            messages = [...messages, { type: 'npc', character: targetNPC, text: response }];
-        }, 1000);
+        // 选择后清空选项，隐藏输入区
+        playerChoices = [];
+        showInputSection = false;
+
+        // TODO: 根据选项获取对应的下一个场景
+        const selectedChoice = screenplay.scenes[currentSceneIndex].playerBehavior.playerChoice
+            .find(c => c.option === choice.option);
+
+        if (selectedChoice) {
+            const nextScene = screenplay.scenes.find(scene => scene.sceneNumber === selectedChoice.nextScene);
+            if (nextScene) {
+                currentSceneIndex = selectedChoice.nextScene - 1;
+                displaySceneDialogues(nextScene);
+            }
+        }
     }
 
     function handleSendMessage(text) {
@@ -104,6 +118,9 @@
 
     function displaySceneDialogues(scene) {
         if (scene.playerBehavior && scene.playerBehavior.dialogue) {
+            const totalDialogues = scene.playerBehavior.dialogue.length;
+            let displayedCount = 0;
+
             scene.playerBehavior.dialogue.forEach((dialog, index) => {
                 setTimeout(() => {
                     messages = [...messages, {
@@ -111,8 +128,22 @@
                         character: dialog.character,
                         text: dialog.content
                     }];
+                    
+                    displayedCount++;
+                    
+                    if (displayedCount === totalDialogues && scene.playerBehavior.actions) {
+                        setTimeout(() => {
+                            hostMessage = scene.playerBehavior.actions;
+                            playerChoices = scene.playerChoice;
+                            showInputSection = true;
+                        }, 1000);
+                    }
                 }, index * 1000);
             });
+        } else if (scene.playerBehavior?.actions) {
+            hostMessage = scene.playerBehavior.actions;
+            playerChoices = scene.playerChoice;
+            showInputSection = true;
         }
     }
 </script>
@@ -132,10 +163,13 @@
             onCharacterClick={handleCharacterClick}
         />
     {/if}
-    <InputSection
-        onSendMessage={handleSendMessage}
-        onOptionClick={handleOptionClick}
-    />
+    {#if showInputSection}
+        <InputSection
+            choices={playerChoices}
+            onSendMessage={handleSendMessage}
+            onOptionClick={handleOptionClick}
+        />
+    {/if}
 </div>
 
 <style>
@@ -145,7 +179,7 @@
         box-sizing: border-box;
     }
 
-    :global(body) {
+    :global(body) { 
         margin: 0;
         padding: 0;
         overflow-x: hidden;

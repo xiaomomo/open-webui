@@ -2,6 +2,7 @@
     export let character;
     export let isActive = false;
     export let messages = [];
+    export let mainPlayer = '';
 
     // 定义一组可用的表情
     const availableEmojis = [
@@ -26,7 +27,7 @@
     const characterEmoji = availableEmojis[getHashCode(character) % availableEmojis.length];
 </script>
 
-<div class="character-container">
+<div class="character-container" class:is-player={character === mainPlayer}>
     <div 
         class="character" 
         class:active={isActive}
@@ -37,11 +38,13 @@
         </div>
         <div class="name">{character}</div>
     </div>
-    {#each messages as message}
-        <div class="message {character === mainPlayer ? 'player-message' : 'npc-message'}">
-            {message.text}
-        </div>
-    {/each}
+    {#if messages.length > 0}
+        {#each messages as message}
+            <div class="message {character === mainPlayer ? 'player-message' : 'npc-message'}">
+                {message.text}
+            </div>
+        {/each}
+    {/if}
 </div>
 
 <style>
@@ -50,6 +53,15 @@
         flex-direction: column;
         width: 100%;
         margin-bottom: 10px;
+        align-items: flex-start;
+    }
+
+    .character-container.is-player {
+        align-items: flex-end;
+    }
+
+    .is-player .character {
+        flex-direction: row-reverse;
     }
 
     .character {
