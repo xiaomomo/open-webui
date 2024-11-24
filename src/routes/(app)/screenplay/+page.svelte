@@ -4,6 +4,7 @@
     import HostSection from './components/HostSection.svelte';
     import GameArea from './components/GameArea.svelte';
     import InputSection from './components/InputSection.svelte';
+    import { WEBUI_API_BASE_URL } from '$lib/constants';
 
     let hostMessage = '欢迎来到奇妙剧本杀！今天我们要解开一个有趣的谜题...';
     let title = '';
@@ -21,7 +22,7 @@
     async function fetchScreenplay() {
         isLoading = true;
         try {
-            const response = await fetch('http://localhost:8080/api/v1/screenplay/getScreenPlay');
+            const response = await fetch(`${WEBUI_API_BASE_URL}/screenplay/getScreenPlay`);
             const data = await response.json();
             screenplay = JSON.parse(data);
             
@@ -117,34 +118,40 @@
     }
 
     function displaySceneDialogues(scene) {
-        if (scene.playerBehavior && scene.playerBehavior.dialogue) {
-            const totalDialogues = scene.playerBehavior.dialogue.length;
-            let displayedCount = 0;
+        // 先展示 host-message
+        hostMessage = scene.screenContent;
 
-            scene.playerBehavior.dialogue.forEach((dialog, index) => {
-                setTimeout(() => {
-                    messages = [...messages, {
-                        type: 'npc',
-                        character: dialog.character,
-                        text: dialog.content
-                    }];
-                    
-                    displayedCount++;
-                    
-                    if (displayedCount === totalDialogues && scene.playerBehavior.actions) {
-                        setTimeout(() => {
-                            hostMessage = scene.playerBehavior.actions;
-                            playerChoices = scene.playerChoice;
-                            showInputSection = true;
-                        }, 1000);
-                    }
-                }, index * 1000);
-            });
-        } else if (scene.playerBehavior?.actions) {
-            hostMessage = scene.playerBehavior.actions;
-            playerChoices = scene.playerChoice;
-            showInputSection = true;
-        }
+        // 延迟 1 秒后再开始展示 NPC 对话
+        setTimeout(() => {
+            if (scene.playerBehavior && scene.playerBehavior.dialogue) {
+                const totalDialogues = scene.playerBehavior.dialogue.length;
+                let displayedCount = 0;
+
+                scene.playerBehavior.dialogue.forEach((dialog, index) => {
+                    setTimeout(() => {
+                        messages = [...messages, {
+                            type: 'npc',
+                            character: dialog.character,
+                            text: dialog.content
+                        }];
+                        
+                        displayedCount++;
+                        
+                        if (displayedCount === totalDialogues && scene.playerBehavior.actions) {
+                            setTimeout(() => {
+                                hostMessage = scene.playerBehavior.actions;
+                                playerChoices = scene.playerChoice || [];
+                                showInputSection = true;
+                            }, 1000);
+                        }
+                    }, index * 1000);
+                });
+            } else if (scene.playerBehavior?.actions) {
+                hostMessage = scene.playerBehavior.actions;
+                playerChoices = scene.playerChoice || [];
+                showInputSection = true;
+            }
+        }, 1000);
     }
 </script>
 
