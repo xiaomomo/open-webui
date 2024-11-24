@@ -1,107 +1,169 @@
 <script>
-    import { onMount } from 'svelte';
-    import SystemMessage from './components/SystemMessage.svelte';
-    import Character from './components/Character.svelte';
-    import DialogOptions from './components/DialogOptions.svelte';
+    import Stars from './components/Stars.svelte';
+    import HostSection from './components/HostSection.svelte';
+    import GameArea from './components/GameArea.svelte';
+    import InputSection from './components/InputSection.svelte';
 
-    let currentScene = 'start';
-    let currentDialog = {};
-    let characters = [];
-    
-    async function fetchGameData() {
-        try {
-            const response = await fetch('/api/screenplay/data');
-            const data = await response.json();
-            characters = data.characters;
-            currentDialog = data.currentDialog;
-        } catch (error) {
-            console.error('Failed to fetch game data:', error);
-        }
+    let hostMessage = '欢迎来到奇妙剧本杀！今天我们要解开一个有趣的谜题...';
+    let messages = [];
+    let activeCharacter = null;
+
+    const responses = {
+        '喵喵': ['喵~我刚才在晒太阳呢', '我看到旺旺在花园里跑来跑去', '这件事我也很困惑...'],
+        '旺旺': ['汪！我在追一只蝴蝶', '我闻到了奇怪的味道', '我看到有人在偷偷摸摸...'],
+        '兔兔': ['其实我看到了一些线索...', '我在吃胡萝卜的时候发现...', '要不要检查一下这个地方？']
+    };
+
+    function getRandomResponse(character) {
+        const characterResponses = responses[character];
+        return characterResponses[Math.floor(Math.random() * characterResponses.length)];
     }
 
-    async function handleOptionSelect(option) {
-        try {
-            const response = await fetch('/api/screenplay/select', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    option,
-                    currentScene
-                })
-            });
-            const data = await response.json();
-            currentDialog = data.dialog;
-            currentScene = data.scene;
-        } catch (error) {
-            console.error('Failed to process selection:', error);
-        }
+    function handleCharacterClick(character) {
+        activeCharacter = character;
+        const response = getRandomResponse(character);
+        messages = [...messages, { type: 'npc', character, text: response }];
+        hostMessage = `${character}说话了！让我们听听看...`;
+
+        setTimeout(() => {
+            messages = messages.filter(m => m.text !== response);
+        }, 5000);
     }
 
-    onMount(fetchGameData);
+    function handleOptionClick(option) {
+        const targetNPC = option.includes('喵喵') ? '喵喵' : 
+                         option.includes('旺旺') ? '旺旺' : '兔兔';
+        
+        messages = [...messages, { type: 'player', text: option }];
+        hostMessage = '这是个有趣的观点！';
+
+        setTimeout(() => {
+            const response = getRandomResponse(targetNPC);
+            messages = [...messages, { type: 'npc', character: targetNPC, text: response }];
+        }, 1000);
+    }
+
+    function handleSendMessage(text) {
+        messages = [...messages, { type: 'player', text }];
+        hostMessage = '让我们继续调查...';
+    }
 </script>
 
-<div class="game-container">
-    <SystemMessage message={currentDialog.systemMessage} />
-
-    <div class="game-scene">
-        <div class="scene-background">
-            <img src="/images/scene1.jpg" alt="游戏场景">
-        </div>
-
-        <div class="npc-area">
-            {#each characters.filter(char => !char.isPlayer) as character}
-                <Character 
-                    {character}
-                    isActive={currentDialog.activeNPC === character.name}
-                    response={currentDialog.npcResponse}
-                />
-            {/each}
-        </div>
-
-        <div class="player-area">
-            {#each characters.filter(char => char.isPlayer) as character}
-                <Character 
-                    {character}
-                    isPlayer={true}
-                    response={currentDialog.playerResponse}
-                    isActive={currentDialog.playerResponse !== ""}
-                />
-            {/each}
-        </div>
-    </div>
-
-    <DialogOptions 
-        options={currentDialog.options || []}
-        onSelect={handleOptionSelect}
+<div class="body">
+    <Stars />
+    <HostSection message={hostMessage} />
+    <GameArea
+        {messages}
+        {activeCharacter}
+        onCharacterClick={handleCharacterClick}
+    />
+    <InputSection
+        onSendMessage={handleSendMessage}
+        onOptionClick={handleOptionClick}
     />
 </div>
 
 <style>
-    .game-container {
+    :global(*) {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    :global(body) {
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+    }
+
+    .body {
+        font-family: 'Rounded Mplus 1c', 'Comic Sans MS', cursive, sans-serif;
+        background: linear-gradient(to bottom, #000, #1a1a1a);
+        margin: 0;
+        padding: 0;
         width: 100%;
-        height: 100vh;
+        min-height: 100vh;
         display: flex;
         flex-direction: column;
-        background: linear-gradient(120deg, #f6f9fc 0%, #e9f2ff 100%);
-        font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
-        padding: 20px;
-        gap: 20px;
-    }
-
-    .game-scene {
-        flex: 1;
+        color: #fff;
         position: relative;
-        border-radius: 24px;
         overflow: hidden;
-        background: rgba(255, 255, 255, 0.8);
-        box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
     }
 
-    .scene-background img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
+    :global(.host-section), :global(.game-area), :global(.input-section) {
+        background: rgba(255, 255, 255, 0.9);
+        border: 8px solid #ff69b4;
+        box-shadow: 0 8px 32px rgba(255, 105, 180, 0.3);
+        z-index: 10;
+        border-radius: 30px;
+        margin: 20px;
     }
-</style> 
+
+    :global(.message) {
+        position: relative;
+        background: linear-gradient(145deg, #ff69b4, #87ceeb);
+        border: 5px solid #fff;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        color: #333;
+        border-radius: 15px;
+        padding: 10px;
+        margin: 10px;
+        max-width: 80%;
+        opacity: 0;
+        transform: translateY(20px);
+        animation: fadeIn 0.5s ease forwards;
+        width: fit-content;
+        transform-origin: left center;
+        transition: all 0.3s ease;
+    }
+
+    :global(.npc-message) {
+        margin-left: 60px;
+        background: linear-gradient(145deg, #87ceeb, #ff69b4);
+        animation: messagePopup 0.3s ease forwards;
+    }
+
+    :global(.player-message) {
+        margin-right: 60px;
+        background: #dcffe4;
+        align-self: flex-end;
+        color: #333;
+        transform-origin: right center;
+    }
+
+    @keyframes fadeIn {
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes messagePopup {
+        0% {
+            transform: scale(0.8);
+            opacity: 0;
+        }
+        100% {
+            transform: scale(1.1);
+            opacity: 1;
+        }
+    }
+
+    :global(.message::after) {
+        content: '';
+        position: absolute;
+        bottom: -10px;
+        border-width: 10px 10px 0;
+        border-style: solid;
+    }
+
+    :global(.npc-message::after) {
+        left: 20px;
+        border-color: #e8f4ff transparent;
+    }
+
+    :global(.player-message::after) {
+        right: 20px;
+        border-color: #dcffe4 transparent;
+    }
+</style>

@@ -66,13 +66,14 @@ Output Format:
 {{
     "title": "Story title that reflects the main theme",
     "difficulty": "Beginner/Intermediate/Advanced",
-    "mainCharacters": [
+    "characters": [
         {{
             "name": "Character name",
             "role": "Role in story",
             "background": "Character background",
             "personality": "Key traits",
-            "languageLevel": "Proficiency level"
+            "languageLevel": "Proficiency level",
+            "isMainPlayer":"true or false"// does this character is main role of the screenPlay
         }}
     ],
     "scenes": [
