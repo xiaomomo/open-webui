@@ -1,9 +1,15 @@
 <script>
     export let message;
+    export let title;
 </script>
 
 <div class="host-section">
-    <div class="host-avatar">🎭</div>
+    <div class="header">
+        <div class="host-avatar">🎭</div>
+        {#if title}
+            <div class="title">{title}</div>
+        {/if}
+    </div>
     <div class="message global-message" id="hostMessage">{message}</div>
 </div>
 
@@ -15,18 +21,37 @@
         z-index: 10;
         border-radius: 30px;
         margin: 20px;
+        padding: 20px;
     }
 
-    .host-avatar {
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        background: #ffd700;
-        margin: 0 auto;
+    .header {
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 40px;
+        gap: 12px;
+        margin-bottom: 10px;
+    }
+
+    .host-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: #ffd700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 30px;
+        flex-shrink: 0;
+    }
+
+    .title {
+        font-size: 18px;
+        font-weight: bold;
+        color: #333;
+        background: linear-gradient(45deg, #ff69b4, #87ceeb);
+        padding: 8px 15px;
+        border-radius: 12px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
 
     #hostMessage {
@@ -35,5 +60,7 @@
         line-height: 1.5;
         background: #fff3dc !important;
         color: #333;
+        padding: 15px;
+        border-radius: 15px;
     }
 </style> 

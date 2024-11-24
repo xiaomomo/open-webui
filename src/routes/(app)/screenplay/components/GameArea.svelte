@@ -4,24 +4,24 @@
     export let messages = [];
     export let activeCharacter = null;
     export let onCharacterClick;
-
-    const characters = ['喵喵', '旺旺', '兔兔'];
+    export let characters;
+    export let mainPlayer;
 </script>
 
 <div class="game-area">
     <div class="npc-section">
-        {#each characters as character}
+        {#each characters.filter(char => char.isMainPlayer === "false") as character}
             <Character
-                {character}
-                isActive={activeCharacter === character}
-                messages={messages.filter(m => m.type === 'npc' && m.character === character)}
-                on:click={() => onCharacterClick(character)}
+                character={character.name}
+                isActive={activeCharacter === character.name}
+                messages={messages.filter(m => m.type === 'npc' && m.character === character.name)}
+                on:click={() => onCharacterClick(character.name)}
             />
         {/each}
     </div>
     <div class="player-section">
         <Character
-            character="小侦探"
+            character={mainPlayer}
             messages={messages.filter(m => m.type === 'player')}
         />
     </div>

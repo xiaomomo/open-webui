@@ -3,12 +3,27 @@
     export let isActive = false;
     export let messages = [];
 
-    const emojis = {
-        '喵喵': '🐱',
-        '旺旺': '🐶',
-        '兔兔': '🐰',
-        '小侦探': '👦'
-    };
+    // 定义一组可用的表情
+    const availableEmojis = [
+        '👧', '👦', '👨', '👩', '👴', '👵',  // 人物
+        '🐱', '🐶', '🐰', '🐺', '🦊', '🐯',  // 动物
+        '🎭', '😊', '🤔', '😄', '😎', '🤓',  // 表情
+        '👑', '🎩', '🎪', '🎬', '🎮', '🎨'   // 其他
+    ];
+
+    // 使用字符串的哈希值来确定emoji，这样同一个角色总是显示相同的emoji
+    function getHashCode(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
+        }
+        return Math.abs(hash);
+    }
+
+    // 根据角色名称选择固定的emoji
+    const characterEmoji = availableEmojis[getHashCode(character) % availableEmojis.length];
 </script>
 
 <div class="character-container">
@@ -18,12 +33,12 @@
         on:click
     >
         <div class="avatar">
-            {emojis[character]}
+            {characterEmoji}
         </div>
         <div class="name">{character}</div>
     </div>
     {#each messages as message}
-        <div class="message {character === '小侦探' ? 'player-message' : 'npc-message'}">
+        <div class="message {character === mainPlayer ? 'player-message' : 'npc-message'}">
             {message.text}
         </div>
     {/each}
