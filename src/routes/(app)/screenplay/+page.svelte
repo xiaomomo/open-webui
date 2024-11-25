@@ -1,9 +1,10 @@
-<script>
+<script lang="ts">
     import { onMount } from 'svelte';
     import Stars from './components/Stars.svelte';
     import HostSection from './components/HostSection.svelte';
     import GameArea from './components/GameArea.svelte';
     import InputSection from './components/InputSection.svelte';
+    import GameChat from './components/GameChat.svelte';
     import { WEBUI_API_BASE_URL } from '$lib/constants';
 
     let hostMessage = '欢迎来到奇妙剧本杀！今天我们要解开一个有趣的谜题...';
@@ -18,6 +19,7 @@
     let isLoading = true;
     let showInputSection = false;
     let playerChoices = [];
+    let gameChat: GameChat;
 
     async function fetchScreenplay() {
         isLoading = true;
@@ -28,7 +30,7 @@
             
             title = screenplay.title;
             characters = screenplay.characters;
-            mainPlayer = screenplay.characters.find(char => char.isMainPlayer === "true")?.name || "小侦探";
+            mainPlayer = screenplay.characters.find(char => char.isMainPlayer === "true")?.name || "侦探";
             
             const firstScene = screenplay.scenes.find(scene => scene.sceneNumber === 1);
             if (firstScene) {
@@ -88,27 +90,53 @@
         hostMessage = `${character}说话了！让我们听听看...`;
     }
 
-    function handleOptionClick(choice) {
-        messages = [...messages, { 
-            type: 'player', 
-            text: `${choice.option}: ${choice.content}`
-        }];
+    async function handleOptionClick(choice) {
+        // 记录玩家选择
+        if (gameChat) {
+            await gameChat.submitGameMessage(`${choice.option}: ${choice.content}`);
+        }
+
         hostMessage = choice.consequence;
+        if (gameChat) {
+            gameChat.receiveGameResponse(choice.consequence, 'host'); // 记录选择的结果
+        }
 
         // 选择后清空选项，隐藏输入区
         playerChoices = [];
         showInputSection = false;
 
-        // TODO: 根据选项获取对应的下一个场景
-        const selectedChoice = screenplay.scenes[currentSceneIndex].playerBehavior.playerChoice
-            .find(c => c.option === choice.option);
+        // 获取所有对话历史
+        const chatHistory = gameChat ? gameChat.getCurrentMessages() : [];
+        
+        try {
+            // 准备请求数据
+            const requestData = {
+                currentSceneIndex,
+                selectedChoice: choice,
+                chatHistory,
+                screenplay: screenplay.id
+            };
 
-        if (selectedChoice) {
-            const nextScene = screenplay.scenes.find(scene => scene.sceneNumber === selectedChoice.nextScene);
-            if (nextScene) {
-                currentSceneIndex = selectedChoice.nextScene - 1;
-                displaySceneDialogues(nextScene);
+            // 发送请求获取下一个场景
+            const response = await fetch(`${WEBUI_API_BASE_URL}/screenplay/nextScene`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestData)
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch next scene');
             }
+
+            const nextSceneData = await response.json();
+            currentSceneIndex = nextSceneData.sceneNumber - 1;
+            displaySceneDialogues(nextSceneData);
+
+        } catch (error) {
+            console.error('Error fetching next scene:', error);
+            hostMessage = '抱歉，发生了一些错误...';
         }
     }
 
@@ -120,6 +148,9 @@
     function displaySceneDialogues(scene) {
         // 先展示 host-message
         hostMessage = scene.screenContent;
+        if (gameChat) {
+            gameChat.startGameChat(scene); // 记录初始的 screenContent
+        }
 
         // 延迟 1 秒后再开始展示 NPC 对话
         setTimeout(() => {
@@ -135,21 +166,24 @@
                             text: dialog.content
                         }];
                         
+                        if (gameChat) {
+                            gameChat.receiveGameResponse(dialog.content, 'npc'); // 记录 NPC 对话
+                        }
+                        
                         displayedCount++;
                         
                         if (displayedCount === totalDialogues && scene.playerBehavior.actions) {
                             setTimeout(() => {
                                 hostMessage = scene.playerBehavior.actions;
+                                if (gameChat) {
+                                    gameChat.receiveGameResponse(scene.playerBehavior.actions, 'host'); // 记录 actions
+                                }
                                 playerChoices = scene.playerChoice || [];
                                 showInputSection = true;
                             }, 1000);
                         }
                     }, index * 1000);
                 });
-            } else if (scene.playerBehavior?.actions) {
-                hostMessage = scene.playerBehavior.actions;
-                playerChoices = scene.playerChoice || [];
-                showInputSection = true;
             }
         }, 1000);
     }
@@ -169,6 +203,7 @@
             {mainPlayer}
             onCharacterClick={handleCharacterClick}
         />
+        <GameChat bind:this={gameChat} hidden />
     {/if}
     {#if showInputSection}
         <InputSection
