@@ -5,15 +5,6 @@
         return messages;
     }
 
-    export async function startGameChat(scene: any) {
-        if (scene?.screenContent) {
-            messages = [{
-                type: 'host',
-                text: scene.screenContent
-            }];
-        }
-    }
-
     export async function submitGameMessage(message: string) {
         const messageId = Date.now().toString();
         messages = [...messages, {
@@ -24,10 +15,12 @@
         return messageId;
     }
 
-    export async function receiveGameResponse(text: string, type: string = 'npc') {
-        messages = [...messages, {
-            type,
-            text
-        }];
-    }
+		export async function receiveServerResponse(text: string, type: string = 'server') {
+			const messageId = Date.now().toString();
+			messages = [...messages, {
+				id: messageId,
+				type,
+				text
+			}];
+		}
 </script> 

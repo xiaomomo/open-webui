@@ -27,6 +27,10 @@
             const response = await fetch(`${WEBUI_API_BASE_URL}/screenplay/getScreenPlay`);
             const data = await response.json();
             screenplay = JSON.parse(data);
+            //todo 这里怎么让gameChat初始化？
+            if (gameChat) {
+                gameChat.receiveServerResponse(screenplay);
+            }
             
             title = screenplay.title;
             characters = screenplay.characters;
@@ -97,10 +101,6 @@
         }
 
         hostMessage = choice.consequence;
-        if (gameChat) {
-            gameChat.receiveGameResponse(choice.consequence, 'host'); // 记录选择的结果
-        }
-
         // 选择后清空选项，隐藏输入区
         playerChoices = [];
         showInputSection = false;
@@ -111,10 +111,7 @@
         try {
             // 准备请求数据
             const requestData = {
-                currentSceneIndex,
-                selectedChoice: choice,
-                chatHistory,
-                screenplay: screenplay.id
+                chatHistory
             };
 
             // 发送请求获取下一个场景
@@ -131,6 +128,9 @@
             }
 
             const nextSceneData = await response.json();
+            if (gameChat) {
+                gameChat.receiveServerResponse(nextSceneData);
+            }
             currentSceneIndex = nextSceneData.sceneNumber - 1;
             displaySceneDialogues(nextSceneData);
 
@@ -148,9 +148,6 @@
     function displaySceneDialogues(scene) {
         // 先展示 host-message
         hostMessage = scene.screenContent;
-        if (gameChat) {
-            gameChat.startGameChat(scene); // 记录初始的 screenContent
-        }
 
         // 延迟 1 秒后再开始展示 NPC 对话
         setTimeout(() => {
@@ -165,19 +162,10 @@
                             character: dialog.character,
                             text: dialog.content
                         }];
-                        
-                        if (gameChat) {
-                            gameChat.receiveGameResponse(dialog.content, 'npc'); // 记录 NPC 对话
-                        }
-                        
                         displayedCount++;
-                        
                         if (displayedCount === totalDialogues && scene.playerBehavior.actions) {
                             setTimeout(() => {
                                 hostMessage = scene.playerBehavior.actions;
-                                if (gameChat) {
-                                    gameChat.receiveGameResponse(scene.playerBehavior.actions, 'host'); // 记录 actions
-                                }
                                 playerChoices = scene.playerChoice || [];
                                 showInputSection = true;
                             }, 1000);
@@ -203,7 +191,7 @@
             {mainPlayer}
             onCharacterClick={handleCharacterClick}
         />
-        <GameChat bind:this={gameChat} hidden />
+<!--        <GameChat bind:this={gameChat} hidden />-->
     {/if}
     {#if showInputSection}
         <InputSection
