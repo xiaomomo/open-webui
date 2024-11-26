@@ -1,0 +1,251 @@
+<style>
+    .body {
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      background: linear-gradient(to bottom, #000, #1a1a1a);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Starry Background */
+    .stars {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      z-index: 1;
+    }
+
+    .star {
+      position: absolute;
+      background: white;
+      border-radius: 50%;
+      animation: twinkle 5s infinite;
+    }
+
+    @keyframes twinkle {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.1;
+      }
+    }
+
+    /* Container */
+    .container {
+      text-align: center;
+      max-width: 400px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 20px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      position: relative;
+      z-index: 10;
+    }
+
+    .welcome-screen img.pixel-image {
+      width: 150px;
+      margin-bottom: 20px;
+      animation: float 5s infinite ease-in-out;
+    }
+
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-20px);
+      }
+    }
+
+    h1 {
+      font-size: 24px;
+      color: #ff69b4;
+    }
+
+    h1 .highlight {
+      color: #ff1493;
+      text-decoration: underline;
+    }
+
+    p {
+      font-size: 16px;
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 16px;
+      color: #333;
+    }
+
+    .icon {
+      width: 20px;
+      height: 20px;
+    }
+
+    input {
+      padding: 10px;
+      border: 2px solid #ff69b4;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+    }
+
+    input:focus {
+      border-color: #ff1493;
+    }
+
+    button {
+      padding: 10px;
+      font-size: 16px;
+      color: #fff;
+      background-color: #ff69b4;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background-color: #ff1493;
+    }
+
+    .thank-you-message {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 20px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      z-index: 10;
+    }
+
+    .thank-you-message img {
+      width: 150px;
+      margin-bottom: 20px;
+    }
+
+    .thank-you-message h2 {
+      font-size: 24px;
+      color: #ff69b4;
+    }
+
+    .thank-you-message p {
+      font-size: 16px;
+      color: #333;
+    }
+
+    /* 在 stars 样式后面添加流星相关的 CSS */
+    .shooting-star {
+      position: absolute;
+      width: 100px;
+      height: 2px;
+      background: linear-gradient(90deg, white, transparent);
+      transform: rotate(225deg);
+      animation: shooting 3s linear;
+      z-index: 2;
+    }
+
+    @keyframes shooting {
+      0% {
+        transform: translateX(-200px) translateY(-200px) rotate(225deg);
+        opacity: 1;
+      }
+      100% {
+        transform: translateX(2000px) translateY(2000px) rotate(225deg);
+        opacity: 0;
+      }
+    }
+  </style>
+
+<div class="body">
+    <!-- Starry Background -->
+    <div class="stars"></div>
+  
+    <div class="container">
+      <div class="welcome-screen">
+        <img src="robot-pixel.png" alt="Pixel Robot" class="pixel-image">
+        <h1>Welcome to <span class="highlight">Pixel's Adventure!</span></h1>
+        <p>Hi there, brave explorer! My name is Pixel. I need your help to bring back my lost knowledge. First, tell me a little about you!</p>
+        
+        <form id="player-info-form">
+          <label for="player-name"><img src="star.png" alt="Name Icon" class="icon"> What’s your name?</label>
+          <input type="text" id="player-name" placeholder="Type your name here" required>
+          
+          <label for="player-age"><img src="star.png" alt="Age Icon" class="icon"> How old are you?</label>
+          <input type="number" id="player-age" min="3" max="10" placeholder="Enter your age" required>
+          
+          <button type="submit">Let’s Begin!</button>
+        </form>
+      </div>
+    </div>
+  
+  </body>
+
+
+  <script type="ts">
+    // Generate stars
+    const starsContainer = document.querySelector('.stars');
+    for (let i = 0; i < 100; i++) {
+      const star = document.createElement('div');
+      star.classList.add('star');
+      star.style.top = `${Math.random() * 100}vh`;
+      star.style.left = `${Math.random() * 100}vw`;
+      star.style.width = `${Math.random() * 2 + 1}px`;
+      star.style.height = `${Math.random() * 2 + 1}px`;
+      star.style.animationDuration = `${Math.random() * 5 + 2}s`;
+      starsContainer.appendChild(star);
+    }
+
+    // 创建流星函数
+    function createShootingStar() {
+      const shootingStar = document.createElement('div');
+      shootingStar.classList.add('shooting-star');
+      
+      // 随机起始位置
+      shootingStar.style.left = `${Math.random() * 100}%`;
+      shootingStar.style.top = `${Math.random() * 100}%`;
+      
+      document.body.appendChild(shootingStar);
+      
+      // 动画结束后移除流星元素
+      shootingStar.addEventListener('animationend', () => {
+        shootingStar.remove();
+      });
+      
+      // 随机设置下一个流星的时间（2-5秒）
+      const nextTime = Math.random() * 1000 + 2000; // 1000-3000ms
+      setTimeout(createShootingStar, nextTime);
+    }
+
+    // 开始生成流星
+    createShootingStar();
+
+    document.getElementById('player-info-form').addEventListener('submit', function (event) {
+      event.preventDefault();
+
+      const name = document.getElementById('player-name').value.trim();
+      const age = document.getElementById('player-age').value.trim();
+      window.location.href = "landing.html";
+    });
+  </script>
