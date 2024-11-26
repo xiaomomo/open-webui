@@ -1,13 +1,12 @@
 <script lang="ts">
     import { page } from '$app/stores';
     import { createNewChat, updateChatById } from '$lib/apis/chats';
-    import { getLessonUnit } from '$lib/apis/englishlesson/courseApi';
     import { v4 as uuidv4 } from 'uuid';
 
     let messages = {};
     let currentMessageId = null;
 
-    async function submitGameMessage(content: string) {
+    export async function submitGameMessage(content: string) {
         // Create user message
         const userMessageId = uuidv4();
         const userMessage = {
@@ -57,7 +56,7 @@
 
     async function saveChatHistory() {
         const lessonUnitId = $page.url.searchParams.get('lessonUnitId');
-        if (!lessonUnitId) return;
+        // if (!lessonUnitId) return;
 
         try {
             // Create or update chat with current history
