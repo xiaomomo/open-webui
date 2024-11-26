@@ -1,10 +1,10 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
+    import { onMount, tick } from 'svelte';
     import Stars from './components/Stars.svelte';
     import HostSection from './components/HostSection.svelte';
     import GameArea from './components/GameArea.svelte';
     import InputSection from './components/InputSection.svelte';
-    import GameChat from './components/GameChat.svelte';
+    import GameChat from '../englishgame/components/GameChat.svelte';
     import { WEBUI_API_BASE_URL } from '$lib/constants';
 
     let hostMessage = '欢迎来到奇妙剧本杀！今天我们要解开一个有趣的谜题...';
@@ -21,15 +21,30 @@
     let playerChoices = [];
     let gameChat: GameChat;
 
+    onMount(async () => {
+        // 先初始化 GameChat
+        if (!gameChat) {
+            await tick();
+            gameChat = new GameChat({
+                target: document.createElement('div'),
+                props: {}
+            });
+        }
+        
+        // 然后获取剧本数据
+        await fetchScreenplay();
+    });
+
     async function fetchScreenplay() {
         isLoading = true;
         try {
             const response = await fetch(`${WEBUI_API_BASE_URL}/screenplay/getScreenPlay`);
             const data = await response.json();
             screenplay = JSON.parse(data);
-            //todo 这里怎么让gameChat初始化？
+            
+            // 使用 startGameChat 来初始化游戏对话
             if (gameChat) {
-                gameChat.receiveServerResponse(screenplay);
+                await gameChat.startGameChat(screenplay);
             }
             
             title = screenplay.title;
@@ -72,10 +87,6 @@
         }
     }
 
-    onMount(() => {
-        fetchScreenplay();
-    });
-
     function getNextResponse(character, sceneNumber = 1) {
         const sceneDialogues = responses[sceneNumber] || [];
         const characterDialogues = sceneDialogues.filter(d => d.character === character);
@@ -101,7 +112,6 @@
         }
 
         hostMessage = choice.consequence;
-        // 选择后清空选项，隐藏输入区
         playerChoices = [];
         showInputSection = false;
 
@@ -109,29 +119,56 @@
         const chatHistory = gameChat ? gameChat.getCurrentMessages() : [];
         
         try {
-            // 准备请求数据
-            const requestData = {
-                chatHistory
-            };
+            const prompt = `
+            you are a screenplay host, you need to answer the player's question and guide the player to the next scene.
+            the following is the chat history:
+            ${JSON.stringify(chatHistory)}
+            It's important to note that your answer should only be in json format like this:
+                {
+                            "playerChoiceEvaluate":"give evaluate of playerChoice", //exist if has user choice
+                            "sceneNumber": "5",
+                            "screenContent": "",
+                            "charactersBehavior":[
+                                {
+                                "charactersName":"",
+                                "behaviorType":"thinking/speaking/motion",
+                                "behaviorContent":""
+                                }
+                            ]
+                            "whatNextPlayerShouldDo":""
+                            "questionBehaviorShouldAction": {
+                                "question":"",
+                                "answerType":"choose/input"
+                                "playerChoice": [
+                                {
+                                    "option": "",
+                                    "chinese": ""
+                                }
+                            ]
+                            }
+
+                }
+            `;
 
             // 发送请求获取下一个场景
-            const response = await fetch(`${WEBUI_API_BASE_URL}/screenplay/nextScene`, {
-                method: 'POST',
+            const response = await fetch(`${WEBUI_API_BASE_URL}/qwenproxy/get_ai_response?prompt=${prompt}`, {
+                method: 'GET',
                 headers: {
                     'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(requestData)
+                }
             });
 
-            if (!response.ok) {
-                throw new Error('Failed to fetch next scene');
+            const responseData = await response.text(); // 先获取原始文本
+            // 先尝试解析一次，然后再解析内部的 JSON 字符串
+            const parsedOnce = JSON.parse(responseData.replace(/\\n/g, ''));
+            const nextSceneData = typeof parsedOnce === 'string' ? JSON.parse(parsedOnce) : parsedOnce;
+            console.log(nextSceneData); // 用于调试
+
+            if (gameChat) {
+                await gameChat.submitGameMessage(JSON.stringify(nextSceneData));
             }
 
-            const nextSceneData = await response.json();
-            if (gameChat) {
-                gameChat.receiveServerResponse(nextSceneData);
-            }
-            currentSceneIndex = nextSceneData.sceneNumber - 1;
+            currentSceneIndex = parseInt(nextSceneData.sceneNumber) - 1;
             displaySceneDialogues(nextSceneData);
 
         } catch (error) {
@@ -191,7 +228,7 @@
             {mainPlayer}
             onCharacterClick={handleCharacterClick}
         />
-<!--        <GameChat bind:this={gameChat} hidden />-->
+        <GameChat bind:this={gameChat} />
     {/if}
     {#if showInputSection}
         <InputSection
