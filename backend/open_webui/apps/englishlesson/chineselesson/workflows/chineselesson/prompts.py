@@ -78,26 +78,29 @@ Output Format:
     ],
     "scenes": [
         {{
-            "sceneNumber": "Scene number",
-            "location": "Where the scene takes place",
+            "playerChoiceEvaluate":"give evaluate of playerChoice", //exist if has user choice
+	    "location": "Where the scene takes place",
             "timeOfDay": "When the scene occurs",
             "screenContent": "Detailed setting and situation description",
-            "playerBehavior": {{
-                "dialogue": [
-                    {{
-                        "character": "Speaker name",
-                        "content": "the content character say"//the content Complete and self-consistent
-                    }}
-                ],
-                "actions": "Detailed description of actions and body language"
-            }},
-            "playerChoice": [
+
+            "charactersBehavior":[
                 {{
-                    "option": "Choice identifier",
-                    "content": "Choice content",
-                    "consequence": "Immediate and future impact of this choice"
+                "charactersName":"",
+                "behaviorType":"thinking/speaking/motion",
+                "behaviorContent":""
                 }}
             ]
+            "whatNextMainPlayerShouldDo": {{
+                "question":"",
+                "answerType":"choose/input"
+                "playerChoice": [
+                {{
+                    "option": "",
+                    "content": "Choice content"
+                }}
+            ]
+            }}
+
         }}
     ],
     "storyProgression": {{

@@ -31,7 +31,7 @@
             });
         }
         
-        // 然后获取剧本数据
+        // 然获取剧本数据
         await fetchScreenplay();
     });
 
@@ -55,7 +55,7 @@
             if (firstScene) {
                 hostMessage = firstScene.screenContent;
                 playerChoices = firstScene.playerChoice || [];
-                displaySceneDialogues(firstScene);
+                processScene(firstScene);
             }
             
             responses = screenplay.scenes.reduce((acc, scene) => {
@@ -169,7 +169,7 @@
             }
 
             currentSceneIndex = parseInt(nextSceneData.sceneNumber) - 1;
-            displaySceneDialogues(nextSceneData);
+            processScene(nextSceneData);
 
         } catch (error) {
             console.error('Error fetching next scene:', error);
@@ -182,35 +182,41 @@
         hostMessage = '让我们继续调查...';
     }
 
-    function displaySceneDialogues(scene) {
-        // 先展示 host-message
+    // 首先定义 sleep 函数
+    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+    // 重构后的异步处理函数
+    async function processScene(scene) {
+        // 如果有 playerChoiceEvaluate，先展示它
+        if (scene.playerChoiceEvaluate) {
+            hostMessage = scene.playerChoiceEvaluate;
+            await sleep(1000); // 等待一秒
+        }
+        // 然后展示 screenContent
         hostMessage = scene.screenContent;
+        // 延迟 1 秒
+        await sleep(1000);
 
-        // 延迟 1 秒后再开始展示 NPC 对话
-        setTimeout(() => {
-            if (scene.playerBehavior && scene.playerBehavior.dialogue) {
-                const totalDialogues = scene.playerBehavior.dialogue.length;
-                let displayedCount = 0;
-
-                scene.playerBehavior.dialogue.forEach((dialog, index) => {
-                    setTimeout(() => {
-                        messages = [...messages, {
-                            type: 'npc',
-                            character: dialog.character,
-                            text: dialog.content
-                        }];
-                        displayedCount++;
-                        if (displayedCount === totalDialogues && scene.playerBehavior.actions) {
-                            setTimeout(() => {
-                                hostMessage = scene.playerBehavior.actions;
-                                playerChoices = scene.playerChoice || [];
-                                showInputSection = true;
-                            }, 1000);
-                        }
-                    }, index * 1000);
-                });
+        // 处理 NPC 对话
+        if (scene.charactersBehavior) {
+            for (const dialog of scene.playerBehavior) {
+                //todo 这里有问题啊
+                messages = [...messages, {
+                    type: 'npc',
+                    character: dialog.charactersName,
+                    text: dialog.behaviorContent
+                }];
+                await sleep(1000);
             }
-        }, 1000);
+
+            // 如果有动作，等待 1 秒后显示
+            if (scene.whatNextMainPlayerShouldDo) {
+                await sleep(1000);
+                hostMessage = scene.whatNextMainPlayerShouldDo.question;
+                playerChoices = scene.whatNextMainPlayerShouldDo.playerChoice || [];
+                showInputSection = true;
+            }
+        }
     }
 </script>
 
