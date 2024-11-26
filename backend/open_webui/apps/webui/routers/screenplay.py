@@ -29,7 +29,7 @@ class GameResponse(BaseModel):
 @router.get("/getScreenPlay")
 async def getScreenPlay():
     return """
-    {
+{
     "title": "小红帽的冒险",
     "difficulty": "Intermediate",
     "characters": [

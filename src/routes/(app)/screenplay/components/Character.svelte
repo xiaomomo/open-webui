@@ -25,21 +25,36 @@
 
     // 根据角色名称选择固定的emoji
     const characterEmoji = availableEmojis[getHashCode(character) % availableEmojis.length];
+
+    // 处理消息自动消失
+    $: {
+        if (messages.length > 0) {
+            messages.forEach(message => {
+                if (!message.id) {
+                    message.id = Math.random().toString(36).substr(2, 9);
+                    setTimeout(() => {
+                        messages = messages.filter(m => m !== message);
+                    }, 3000);
+                }
+            });
+        }
+    }
 </script>
 
 <div class="character-container" class:is-player={character === mainPlayer}>
-    <div 
+    <button 
         class="character" 
         class:active={isActive}
         on:click
+        type="button"
     >
         <div class="avatar">
             {characterEmoji}
         </div>
         <div class="name">{character}</div>
-    </div>
+    </button>
     {#if messages.length > 0}
-        {#each messages as message}
+        {#each messages as message (message.id)}
             <div class="message {character === mainPlayer ? 'player-message' : 'npc-message'}">
                 {message.text}
             </div>

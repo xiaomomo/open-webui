@@ -6,6 +6,8 @@
     import InputSection from './components/InputSection.svelte';
     import GameChat from '../englishgame/components/GameChat.svelte';
     import { WEBUI_API_BASE_URL } from '$lib/constants';
+    import { synthesizeSoVITSSpeech } from '$lib/apis/audio';
+    import { config, settings } from '$lib/stores';
 
     let hostMessage = '欢迎来到奇妙剧本杀！今天我们要解开一个有趣的谜题...';
     let title = '';
@@ -44,32 +46,21 @@
             
             // 使用 startGameChat 来初始化游戏对话
             if (gameChat) {
-                await gameChat.startGameChat(screenplay);
+                await gameChat.submitGameMessage(screenplay);
             }
             
             title = screenplay.title;
             characters = screenplay.characters;
-            mainPlayer = screenplay.characters.find(char => char.isMainPlayer === "true")?.name || "侦探";
+            mainPlayer = screenplay.characters.find(char => 
+                char.isMainPlayer === "true" || char.isMainPlayer === true
+            )?.name || "侦探";
             
-            const firstScene = screenplay.scenes.find(scene => scene.sceneNumber === 1);
+            const firstScene = screenplay.scenes[0];
             if (firstScene) {
                 hostMessage = firstScene.screenContent;
                 playerChoices = firstScene.playerChoice || [];
                 processScene(firstScene);
             }
-            
-            responses = screenplay.scenes.reduce((acc, scene) => {
-                if (!acc[scene.sceneNumber]) {
-                    acc[scene.sceneNumber] = [];
-                }
-                scene.playerBehavior.dialogue.forEach(dialog => {
-                    acc[scene.sceneNumber].push({
-                        character: dialog.character,
-                        content: dialog.content
-                    });
-                });
-                return acc;
-            }, {});
 
         } catch (error) {
             console.error('Error fetching screenplay:', error);
@@ -98,11 +89,12 @@
         return nextDialogue?.content || `${character}沉默不语...`;
     }
 
-    function handleCharacterClick(character) {
+    async function handleCharacterClick(character) {
         activeCharacter = character;
         const response = getNextResponse(character, currentSceneIndex + 1);
         messages = [...messages, { type: 'npc', character, text: response }];
         hostMessage = `${character}说话了！让我们听听看...`;
+        await playTextToSpeech(response);
     }
 
     async function handleOptionClick(choice) {
@@ -185,34 +177,61 @@
     // 首先定义 sleep 函数
     const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-    // 重构后的异步处理函数
+    // 添加新的语音合成函数
+    async function playTextToSpeech(text: string) {
+        try {
+            const defaultVoice = $settings?.audio?.tts?.defaultVoice;
+            const configVoice = $config?.audio?.tts?.voice;
+            const selectedVoice = defaultVoice === configVoice
+                ? ($settings?.audio?.tts?.voice ?? configVoice)
+                : configVoice;
+
+            if (selectedVoice) {
+                const audio = await synthesizeSoVITSSpeech(
+                    localStorage.token,
+                    selectedVoice,
+                    text
+                );
+
+                if (audio) {
+                    const blob = await audio.blob();
+                    const blobUrl = URL.createObjectURL(blob);
+                    const audioElement = new Audio(blobUrl);
+                    await audioElement.play();
+                }
+            }
+        } catch (error) {
+            console.error('TTS Error:', error);
+        }
+    }
+
+    // 修改 processScene 函数
     async function processScene(scene) {
-        // 如果有 playerChoiceEvaluate，先展示它
         if (scene.playerChoiceEvaluate) {
             hostMessage = scene.playerChoiceEvaluate;
-            await sleep(1000); // 等待一秒
+            await playTextToSpeech(scene.playerChoiceEvaluate);
+            await sleep(1000);
         }
-        // 然后展示 screenContent
+        
         hostMessage = scene.screenContent;
-        // 延迟 1 秒
+        await playTextToSpeech(scene.screenContent);
         await sleep(1000);
 
-        // 处理 NPC 对话
         if (scene.charactersBehavior) {
-            for (const dialog of scene.playerBehavior) {
-                //todo 这里有问题啊
+            for (const dialog of scene.charactersBehavior) {
                 messages = [...messages, {
                     type: 'npc',
                     character: dialog.charactersName,
                     text: dialog.behaviorContent
                 }];
+                await playTextToSpeech(dialog.behaviorContent);
                 await sleep(1000);
             }
 
-            // 如果有动作，等待 1 秒后显示
             if (scene.whatNextMainPlayerShouldDo) {
                 await sleep(1000);
                 hostMessage = scene.whatNextMainPlayerShouldDo.question;
+                await playTextToSpeech(scene.whatNextMainPlayerShouldDo.question);
                 playerChoices = scene.whatNextMainPlayerShouldDo.playerChoice || [];
                 showInputSection = true;
             }
@@ -234,7 +253,7 @@
             {mainPlayer}
             onCharacterClick={handleCharacterClick}
         />
-        <GameChat bind:this={gameChat} />
+        
     {/if}
     {#if showInputSection}
         <InputSection
