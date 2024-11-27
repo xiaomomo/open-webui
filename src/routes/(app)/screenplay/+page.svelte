@@ -103,7 +103,7 @@
             await gameChat.submitGameMessage(`${choice.option}: ${choice.content}`);
         }
 
-        hostMessage = choice.consequence;
+        hostMessage = "机器人在思考...";
         playerChoices = [];
         showInputSection = false;
 
@@ -127,14 +127,13 @@
                                 "behaviorContent":""
                                 }
                             ]
-                            "whatNextPlayerShouldDo":""
-                            "questionBehaviorShouldAction": {
+                            "whatNextMainPlayerShouldDo": {
                                 "question":"",
                                 "answerType":"choose/input"
                                 "playerChoice": [
                                 {
                                     "option": "",
-                                    "chinese": ""
+                                    "content": ""
                                 }
                             ]
                             }
@@ -218,6 +217,7 @@
         await sleep(1000);
 
         if (scene.charactersBehavior) {
+            messages = [];
             for (const dialog of scene.charactersBehavior) {
                 messages = [...messages, {
                     type: 'npc',
@@ -227,6 +227,9 @@
                 await playTextToSpeech(dialog.behaviorContent);
                 await sleep(1000);
             }
+            //聊完天后把消息messages 全部清空
+            await sleep(2000);
+            messages = [];
 
             if (scene.whatNextMainPlayerShouldDo) {
                 await sleep(1000);
