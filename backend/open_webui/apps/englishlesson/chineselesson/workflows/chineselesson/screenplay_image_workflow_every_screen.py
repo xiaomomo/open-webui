@@ -40,7 +40,7 @@ class CollectImagesEvent(Event):
     screenplay: str
     image_result: dict
 
-class ChineseLessonImageWorkflow(Workflow):
+class ScreenplayImageWorkflow(Workflow):
     @step
     async def step_start(self, ctx: Context, ev: StartEvent) -> SplitScreenplayEvent:
         print(f"Starting workflow with content: {ev.origin_content}")
@@ -378,7 +378,7 @@ async def main():
     """
     
     # Initialize the workflow
-    workflow = ChineseLessonImageWorkflow(timeout=120, verbose=False)
+    workflow = ScreenplayImageWorkflow(timeout=120, verbose=False)
     
     try:
         print("Initializing workflow with test content")
