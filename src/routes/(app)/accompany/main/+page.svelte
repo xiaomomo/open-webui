@@ -1,254 +1,214 @@
-<script type="ts">
-    // 定义页面数据
-    const pageData = {
-      dialog: {
-        text: "你好呀，小朋友！我是可爱的AI精灵，让我们一起去探索知识的奇妙世界吧！选择下面一个你喜欢的主题，开始我们的冒险吧！ ✨"
-      },
-      cards: [
-        {
-          id: 'math',
-          image: 'math-planet.png',
-          imageAlt: '数学星球',
-          title: '数学星球',
-          description: '和数字小精灵一起玩趣味数学游戏！',
-          url: 'math-planet.html'
+<script lang="ts">
+    import { onMount, tick } from 'svelte';
+    import GameChat from '../../englishgame/components/GameChat.svelte';
+    import { WEBUI_API_BASE_URL } from '$lib/constants';
+    import { synthesizeSoVITSSpeech } from '$lib/apis/audio';
+    import { config, settings } from '$lib/stores';
+
+    let gameChat: GameChat;
+    let showCards = false;
+
+    // Add pageData object
+    let pageData = {
+        dialog: {
+            text: "Welcome! I'm your AI companion..."  // Default welcome message
         },
-        {
-          id: 'science',
-          image: 'science-zone.png',
-          imageAlt: 'Science Zone',
-          title: 'Science Zone',
-          description: 'Conduct experiments and learn about the natural world.',
-          url: 'science-zone.html'
-        },
-        {
-          id: 'literature',
-          image: 'literature-world.png',
-          imageAlt: 'Literature World',
-          title: 'Literature World',
-          description: 'Read stories and improve your reading skills.',
-          url: 'literature-world.html'
-        }
-      ]
+        cards: [
+            {
+                image: "/robot-pixel.png",
+                imageAlt: "Chat",
+                description: "Let's chat!",
+                url: "/chat"
+            },
+            {
+                image: "/game-pixel.png",
+                imageAlt: "Game",
+                description: "Play a game",
+                url: "/game"
+            }
+            // Add more cards as needed
+        ]
     };
 
-    // 渲染函数
-    function renderCards() {
-      const cardsContainer = document.getElementById('cards');
-      cardsContainer.innerHTML = pageData.cards.map(card => `
-        <div class="card" onclick="goToSector('${card.url}')">
-          <img src="${card.image}" alt="${card.imageAlt}">
-          <h3>${card.title}</h3>
-          <p>${card.description}</p>
-        </div>
-      `).join('');
-    }
+    onMount(async () => {
+        // Initialize GameChat
+        if (!gameChat) {
+            await tick();
+            gameChat = new GameChat({
+                target: document.createElement('div'),
+                props: {}
+            });
+        }
 
-    function renderDialog() {
-      const dialogElement = document.getElementById('dialog');
-      dialogElement.textContent = pageData.dialog.text;
-    }
+        // Start initial chat
+        await startInitialChat();
 
-    // 页面初始化
-    document.addEventListener('DOMContentLoaded', () => {
-      // 渲染页面元素
-      renderDialog();
-      renderCards();
+        // Show cards after delay
+        setTimeout(() => {
+            showCards = true;
+        }, 3000);
 
-      const cards = document.getElementById('cards');
-      
-      // 设置对话显示时间（毫秒）
-      const dialogDuration = 3000;
-      
-      // 等待对话显示完成后展示卡片
-      setTimeout(() => {
-        console.log('show cards');
-        cards.classList.add('show');
-      }, dialogDuration);
+        // Generate stars array instead of DOM manipulation
+        stars = Array.from({ length: 100 }, () => ({
+            top: `${Math.random() * 100}vh`,
+            left: `${Math.random() * 100}vw`,
+            width: `${Math.random() * 2 + 1}px`,
+            height: `${Math.random() * 2 + 1}px`,
+            duration: `${Math.random() * 5 + 2}s`
+        }));
+
+        // Start shooting stars
+        createShootingStar();
     });
 
-    // 导航函数
+    async function startInitialChat() {
+        if (gameChat) {
+            const initialMessage = await gameChat.submitGameMessage("Start new accompany session");
+            
+            try {
+                const prompt = `
+                you are an AI companion, you need to respond to the player with a warm welcome message.
+                It's important to note that your answer should only be in json format like this:
+                    {
+                        "screenContent": "",
+                        "charactersBehavior":[
+                            {
+                            "charactersName":"AI",
+                            "behaviorType":"speaking",
+                            "behaviorContent":""
+                            }
+                        ]
+                    }
+                `;
+
+                const response = await fetch(`${WEBUI_API_BASE_URL}/qwenproxy/get_ai_response?prompt=${prompt}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const responseData = await response.text();
+                const parsedResponse = JSON.parse(responseData.replace(/\\n/g, ''));
+                const aiResponse = typeof parsedResponse === 'string' ? JSON.parse(parsedResponse) : parsedResponse;
+
+                if (gameChat) {
+                    await gameChat.submitGameMessage(JSON.stringify(aiResponse));
+                }
+
+                // Update dialog text with AI response
+                if (aiResponse.charactersBehavior?.[0]?.behaviorContent) {
+                    pageData.dialog.text = aiResponse.charactersBehavior[0].behaviorContent;
+                    await playTextToSpeech(pageData.dialog.text);
+                }
+
+            } catch (error) {
+                console.error('Error getting AI response:', error);
+                // Set fallback message if there's an error
+                pageData.dialog.text = "Hello! I'm here to help you.";
+            }
+        }
+    }
+
+    async function playTextToSpeech(text: string) {
+        try {
+            const defaultVoice = $settings?.audio?.tts?.defaultVoice;
+            const configVoice = $config?.audio?.tts?.voice;
+            const selectedVoice = defaultVoice === configVoice
+                ? ($settings?.audio?.tts?.voice ?? configVoice)
+                : configVoice;
+
+            if (selectedVoice) {
+                const audio = await synthesizeSoVITSSpeech(
+                    localStorage.token,
+                    selectedVoice,
+                    text
+                );
+
+                if (audio) {
+                    const blob = await audio.blob();
+                    const blobUrl = URL.createObjectURL(blob);
+                    const audioElement = new Audio(blobUrl);
+                    await audioElement.play();
+                }
+            }
+        } catch (error) {
+            console.error('TTS Error:', error);
+        }
+    }
+
+    let stars = [];
+    let shootingStars = [];
+
+    function createShootingStar() {
+        const star = {
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            id: Date.now()
+        };
+        
+        shootingStars = [...shootingStars, star];
+        
+        // Remove star after animation
+        setTimeout(() => {
+            shootingStars = shootingStars.filter(s => s.id !== star.id);
+        }, 3000);
+
+        // Schedule next star
+        setTimeout(createShootingStar, Math.random() * 1000 + 2000);
+    }
+
     function goToSector(url) {
-      window.location.href = url;
+        window.location.href = url;
     }
 
     function goToAchievements() {
-      window.location.href = 'achievements.html';
+        window.location.href = 'achievements.html';
     }
-
-    // 生成星星
-    const starsContainer = document.querySelector('.stars');
-    for (let i = 0; i < 100; i++) {
-      const star = document.createElement('div');
-      star.classList.add('star');
-      star.style.top = `${Math.random() * 100}vh`;
-      star.style.left = `${Math.random() * 100}vw`;
-      star.style.width = `${Math.random() * 2 + 1}px`;
-      star.style.height = `${Math.random() * 2 + 1}px`;
-      star.style.animationDuration = `${Math.random() * 5 + 2}s`;
-      starsContainer.appendChild(star);
-    }
-
-    // 创建流星函数
-    function createShootingStar() {
-      const shootingStar = document.createElement('div');
-      shootingStar.classList.add('shooting-star');
-      
-      // 随机起始位置
-      shootingStar.style.left = `${Math.random() * 100}%`;
-      shootingStar.style.top = `${Math.random() * 100}%`;
-      
-      document.body.appendChild(shootingStar);
-      
-      // 动画结束后移除流星元素
-      shootingStar.addEventListener('animationend', () => {
-        shootingStar.remove();
-      });
-      
-      // 随机设置下一个流星的时间
-      const nextTime = Math.random() * 1000 + 2000;
-      setTimeout(createShootingStar, nextTime);
-    }
-
-    // 开始生成流星
-    createShootingStar();
-  </script>
+</script>
 
 <div class="body">
     <!-- Starry Background -->
-    <div class="stars"></div>
-  
+    <div class="stars">
+        {#each stars as star}
+            <div class="star" 
+                style="top: {star.top}; 
+                       left: {star.left}; 
+                       width: {star.width}; 
+                       height: {star.height}; 
+                       animation-duration: {star.duration};">
+            </div>
+        {/each}
+        {#each shootingStars as star (star.id)}
+            <div class="shooting-star" 
+                style="left: {star.left}; 
+                       top: {star.top};">
+            </div>
+        {/each}
+    </div>
+
     <div class="container">
       <div class="header">
         <button onclick="goToAchievements()">成就区</button>
       </div>
   
       <div class="pixel-container">
-        <img src="robot-pixel.png" alt="AI Pixel" class="pixel" id="pixel">
-        <div class="dialog" id="dialog"></div>
+        <img src="/robot-pixel.png" alt="AI Pixel" class="pixel" id="pixel">
+        <div class="dialog" id="dialog">{pageData.dialog.text}</div>
       </div>
   
       <div class="display-area">
-        <div class="cards" id="cards"></div>
+        <div class="cards" class:show={showCards}>
+            {#each pageData.cards as card}
+                <div class="card" on:click={() => goToSector(card.url)}>
+                    <img src={card.image} alt={card.imageAlt}>
+                    <p>{card.description}</p>
+                </div>
+            {/each}
+        </div>
       </div>
     </div>
-  
-    <script>
-      // 定义页面数据
-      const pageData = {
-        dialog: {
-          text: "你好呀，小朋友！我是可爱的AI精灵，让我们一起去探索知识的奇妙世界吧！选择下面一个你喜欢的主题，开始我们的冒险吧！ ✨"
-        },
-        cards: [
-          {
-            id: 'math',
-            image: 'math-planet.png',
-            imageAlt: '数学星球',
-            title: '数学星球',
-            description: '和数字小精灵一起玩趣味数学游戏！',
-            url: 'math-planet.html'
-          },
-          {
-            id: 'science',
-            image: 'science-zone.png',
-            imageAlt: 'Science Zone',
-            title: 'Science Zone',
-            description: 'Conduct experiments and learn about the natural world.',
-            url: 'science-zone.html'
-          },
-          {
-            id: 'literature',
-            image: 'literature-world.png',
-            imageAlt: 'Literature World',
-            title: 'Literature World',
-            description: 'Read stories and improve your reading skills.',
-            url: 'literature-world.html'
-          }
-        ]
-      };
-  
-      // 渲染函数
-      function renderCards() {
-        const cardsContainer = document.getElementById('cards');
-        cardsContainer.innerHTML = pageData.cards.map(card => `
-          <div class="card" onclick="goToSector('${card.url}')">
-            <img src="${card.image}" alt="${card.imageAlt}">
-            <h3>${card.title}</h3>
-            <p>${card.description}</p>
-          </div>
-        `).join('');
-      }
-  
-      function renderDialog() {
-        const dialogElement = document.getElementById('dialog');
-        dialogElement.textContent = pageData.dialog.text;
-      }
-  
-      // 页面初始化
-      document.addEventListener('DOMContentLoaded', () => {
-        // 渲染页面元素
-        renderDialog();
-        renderCards();
-  
-        const cards = document.getElementById('cards');
-        
-        // 设置对话显示时间（毫秒）
-        const dialogDuration = 3000;
-        
-        // 等待对话显示完成后展示卡片
-        setTimeout(() => {
-          console.log('show cards');
-          cards.classList.add('show');
-        }, dialogDuration);
-      });
-  
-      // 导航函数
-      function goToSector(url) {
-        window.location.href = url;
-      }
-  
-      function goToAchievements() {
-        window.location.href = 'achievements.html';
-      }
-  
-      // 生成星星
-      const starsContainer = document.querySelector('.stars');
-      for (let i = 0; i < 100; i++) {
-        const star = document.createElement('div');
-        star.classList.add('star');
-        star.style.top = `${Math.random() * 100}vh`;
-        star.style.left = `${Math.random() * 100}vw`;
-        star.style.width = `${Math.random() * 2 + 1}px`;
-        star.style.height = `${Math.random() * 2 + 1}px`;
-        star.style.animationDuration = `${Math.random() * 5 + 2}s`;
-        starsContainer.appendChild(star);
-      }
-  
-      // 创建流星函数
-      function createShootingStar() {
-        const shootingStar = document.createElement('div');
-        shootingStar.classList.add('shooting-star');
-        
-        // 随机起始位置
-        shootingStar.style.left = `${Math.random() * 100}%`;
-        shootingStar.style.top = `${Math.random() * 100}%`;
-        
-        document.body.appendChild(shootingStar);
-        
-        // 动画结束后移除流星元素
-        shootingStar.addEventListener('animationend', () => {
-          shootingStar.remove();
-        });
-        
-        // 随机设置下一个流星的时间
-        const nextTime = Math.random() * 1000 + 2000;
-        setTimeout(createShootingStar, nextTime);
-      }
-  
-      // 开始生成流星
-      createShootingStar();
-    </script>
-  </body>
+  </div>
 
 <style>
     .body {
@@ -263,6 +223,7 @@
       overflow: hidden;
       position: relative;
       color: #fff;
+      width: 100%;
     }
 
     /* Starry Background */
@@ -428,19 +389,13 @@
     }
 
     .card img {
-      width: 100px;
-      height: 100px;
+      width: 80px;
+      height: 80px;
       transition: transform 0.3s ease;
     }
 
     .card:hover img {
       transform: rotate(10deg);
-    }
-
-    .card h3 {
-      font-size: 20px;
-      color: #fff;
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
     }
 
     .card p {
