@@ -1,130 +1,108 @@
-import ocrmypdf
-from pdfminer.high_level import extract_text
-from pdfminer.layout import LAParams
-from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
-from pdfminer.pdfpage import PDFPage
-from pdfminer.converter import TextConverter
-import io
 import os
-import subprocess
 import sys
-import time
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../')))
-from open_webui.apps.englishlesson.workflows.struct_lesson.struct_lesson_content import StructLessonWorkflow
-from open_webui.apps.englishlesson.workflows.lesson_question.lesson_question import LessonQuestionWorkflow
-from open_webui.apps.webui.models.fredisalesson import FredisaLessonForm, FredisaLessonModel, FredisaLessons
-
-
+import requests
+from urllib.parse import urlparse
+import json
 import asyncio
 
-def extract_text_from_pdf(pdf_path):
-    resource_manager = PDFResourceManager()
-    fake_file_handle = io.StringIO()
-    converter = TextConverter(
-        resource_manager,
-        fake_file_handle,
-        laparams=LAParams(),
-        codec='utf-8'
-    )
-    page_interpreter = PDFPageInterpreter(resource_manager, converter)
+# Add the project root directory to Python path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(current_dir, '../../../../'))
+sys.path.append(project_root)
 
-    with open(pdf_path, 'rb') as fh:
-        for page in PDFPage.get_pages(fh):
-            page_interpreter.process_page(page)
+# Now import the modules
+from open_webui.apps.englishlesson.chineselesson.workflows.chineselesson.screenplay_workflow import ScreenplayWorkflow
+from open_webui.apps.englishlesson.chineselesson.workflows.chineselesson.screenplay_overview_image_workflow import ScreenplayImageWorkflow
+from open_webui.apps.webui.models.fredisalesson import FredisaLessonForm, FredisaLessons
 
-    text = fake_file_handle.getvalue()
-    converter.close()
-    fake_file_handle.close()
 
-    return text
-
-def process_pdf(input_path):
+def saveImageToStatic(screenplayImageUrl):
+    # Define the static folder path
+    static_folder = "/Users/liuqingjie/code/ai-tts/open-webui/static/static/screenplay_resource/"
+    
+    # Create the directory if it doesn't exist
+    os.makedirs(static_folder, exist_ok=True)
+    
     try:
-        # OCR 处理
-        command = f'ocrmypdf {input_path} {input_path + "_ocr.pdf"} --force-ocr'
-        subprocess.run(command, shell=True, check=True)
-        # 使用改进的文本提取方法
-        text = extract_text_from_pdf(input_path+'_ocr.pdf')
-        return text
-
-    except ocrmypdf.exceptions.PriorOcrFoundError:
-        print("PDF已包含OCR文本层")
-        return extract_text_from_pdf(input_path)
+        # Get the filename from the URL
+        parsed_url = urlparse(screenplayImageUrl)
+        filename = os.path.basename(parsed_url.path)
+        
+        # If filename is empty or has no extension, generate a default one
+        if not filename or '.' not in filename:
+            filename = f"screenplay_{hash(screenplayImageUrl)}.png"
+        
+        # Full path where the image will be saved
+        save_path = os.path.join(static_folder, filename)
+        
+        # Download and save the image
+        response = requests.get(screenplayImageUrl, timeout=10)
+        response.raise_for_status()  # Raise an exception for bad status codes
+        
+        with open(save_path, 'wb') as f:
+            f.write(response.content)
+        
+        # Return the relative path that can be used in the frontend
+        return f"/static/screenplay_resource/{filename}"
+    
     except Exception as e:
-        print(f"处理出错: {str(e)}")
+        print(f"Error saving image: {str(e)}")
         return None
 
+
 async def save_unit(item):
-    # 如果item长度小于50，直接返回 再加一个条件直接过滤掉就好，临时简单做下
-    if len(item) < 50:
-        return
-    if "The following units are covered" in item:
-        return
+
+    # 调用工作流结构化screenplay
+    w = ScreenplayWorkflow(timeout=600, verbose=False)
+    print(f"workflow start with content:{item}")
+    screenplay = await w.run(origin_content=item)
+
+    # 调用工作流生成图片
+    w = ScreenplayImageWorkflow(timeout=600, verbose=False)
+    screenplayImage = await w.run(origin_content=item)
+    # save it to static folder
+    screenplayImagePath = saveImageToStatic(screenplayImage)
+    print(f"workflow generate question_json:{screenplayImage}")
+
     # save item to sqlite
     fredisaLesson = FredisaLessonForm(
-        unit=item.split('\n')[0], 
-        subject="English",  # Add default subject
-        content=item, 
-        lesson_json="", 
+        unit=screenplay.title,
+        subject="Chinese",  # Add default subject
+        content=item,
+        lesson_json=screenplay,
         question_json="",
-        lesson_img=""
+        lesson_img=screenplayImagePath
     )
-    fredisaLesson.content = item
-    fredisaLesson.unit = item.split('\n')[0]
-    # 调用工作流结构化lesson
-    w = StructLessonWorkflow(timeout=120, verbose=False)
-    print(f"workflow start with content:{fredisaLesson.content}")
-    if not fredisaLesson.content:
-        return
-    lesson_json = await w.run(origin_content=fredisaLesson.content)
-    print(f"workflow generate lesson_json:{lesson_json}")
-    fredisaLesson.lesson_json = lesson_json
-
-    # 调用工作流生成question
-    w = LessonQuestionWorkflow(timeout=120, verbose=False)
-    question_json = await w.run(origin_content=fredisaLesson.lesson_json)
-    print(f"workflow generate question_json:{question_json}")
-
-    fredisaLesson.question_json = question_json
     lesson = FredisaLessons.insert_new_lesson(fredisaLesson)
     return lesson
 
 
-
-async def savePdfContent(text_content):
-    # todo 这里要用更好的截取办法，去掉脏数据
-    units = [unit.strip() for unit in text_content.split("Unit ") if unit.strip()]
-    for item in units:
-        await save_unit(item)
-
-
 if __name__ == "__main__":
-    pdf_directory = "enlishlessonpdf"
+    async def process_all_stories():
+        try:
+            # Read the JSON file
+            with open('./grimm_stories_v2.json', 'r', encoding='utf-8') as file:
+                stories = json.load(file)
 
-    # Check if directory exists
-    if not os.path.exists(pdf_directory):
-        print(f"Directory {pdf_directory} does not exist")
-        sys.exit(1)
+            # Process each story
+            for index, story in enumerate(stories):
+                print(f"Processing story {index + 1}/{len(stories)}")
+                try:
+                    await save_unit(story['content'])
+                    print(f"Successfully processed story {index + 1}")
+                except Exception as e:
+                    print(f"Error processing story {index + 1}: {str(e)}")
+                    continue
 
-    # Get all PDF files in the directory
-    pdf_files = [f for f in os.listdir(pdf_directory) if f.endswith('.pdf')]
+            print("All stories have been processed")
 
-    if not pdf_files:
-        print(f"No PDF files found in {pdf_directory}")
-        sys.exit(1)
+        except FileNotFoundError:
+            print("Error: grimm_stories_v2.json file not found in current directory")
+        except json.JSONDecodeError:
+            print("Error: Invalid JSON format in grimm_stories_v2.json")
+        except Exception as e:
+            print(f"Unexpected error: {str(e)}")
 
-    # Process each PDF file
-    for pdf_file in pdf_files:
-        input_file = os.path.join(pdf_directory, pdf_file)
-        print(f"\nProcessing {input_file}...")
+    # Run the async function
+    asyncio.run(process_all_stories())
 
-        text_content = process_pdf(input_file)
-        if text_content:
-            # Remove extra whitespace lines
-            text_content = '\n'.join(line for line in text_content.splitlines() if line.strip())
-            print("Extracted text content:")
-            print(text_content)
-            asyncio.run(savePdfContent(text_content))
-        else:
-            print(f"Failed to process {input_file}")

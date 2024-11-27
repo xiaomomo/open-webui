@@ -8,7 +8,7 @@ from llama_index.core.workflow import (
 )
 from dashscope import Generation, ImageSynthesis
 import json
-from prompts import *
+from .prompts import *
 import logging
 from typing import Union
 import os
@@ -27,64 +27,41 @@ logger = logging.getLogger(__name__)
 #     4. generate image by core info
 #     5. finish
 
-class SplitScreenplayEvent(Event):
-    screenplay: str
-
 class GenerateCoreInfoEvent(Event):
-    scenes: list[dict]
+    screenplay: str
 
 class GenerateImageEvent(Event):
-    core_info: dict
-
-class CollectImagesEvent(Event):
-    screenplay: str
-    image_result: dict
+    core_info: str
 
 class ScreenplayImageWorkflow(Workflow):
     @step
-    async def step_start(self, ctx: Context, ev: StartEvent) -> SplitScreenplayEvent:
+    async def step_start(self, ctx: Context, ev: StartEvent) -> GenerateCoreInfoEvent:
         print(f"Starting workflow with content: {ev.origin_content}")
         # Store screenplay in context
         await ctx.set("screenplay", ev.origin_content)
-        return SplitScreenplayEvent(screenplay=ev.origin_content)
-
-    @step
-    async def step_split_screenplay(self, ctx: Context, ev: SplitScreenplayEvent) -> GenerateCoreInfoEvent:
-        print("Splitting screenplay into scenes")
-        try:
-            screenplayJson = json.loads(ev.screenplay)
-            scenes = screenplayJson["scenes"]
-            # Send multiple events for parallel processing
-            for scene in scenes:
-                ctx.send_event(GenerateCoreInfoEvent(scenes=[scene]))
-        except Exception as e:
-            logger.error("Failed to split screenplay: %s", str(e))
-            raise
+        return GenerateCoreInfoEvent(screenplay=ev.origin_content)
 
     @step(num_workers=4)  # Process up to 4 scenes concurrently
     async def step_generate_core_info(self, ctx: Context, ev: GenerateCoreInfoEvent) -> GenerateImageEvent:
-        scene = ev.scenes[0]  # Since we're now processing one scene at a time
-        print(f"Generating core information for scene {scene['sceneNumber']}")
+        print(f"Generating core information for scene {ev.screenplay}")
         try:
-            prompt = prompt_generate_core_info.format(scene=scene)
+            prompt = prompt_generate_overview_core_info.format(scene=ev.screenplay)
             response = Generation.call(
                 model='qwen-max',
                 messages=[{'role': 'user', 'content': prompt}]
             )
             core_info = response.output.text
             print(f"Generated core information: {core_info}")
-            core_info_dict = {'sceneNumber': scene['sceneNumber'], 'core_info': core_info}
-            ctx.send_event(GenerateImageEvent(core_info=core_info_dict))
+            ctx.send_event(GenerateImageEvent(core_info=core_info))
         except Exception as e:
             logger.error(f"Failed to generate core info for scene: {str(e)}")
             raise
 
     @step(num_workers=4)  # Process up to 4 images concurrently
-    async def step_generate_images(self, ctx: Context, ev: GenerateImageEvent) -> CollectImagesEvent:
+    async def step_generate_images(self, ctx: Context, ev: GenerateImageEvent) -> StopEvent:
         print(f"Generating image for scene {ev.core_info}")
         try:
-            scene_num = ev.core_info['sceneNumber']
-            core_info = ev.core_info['core_info']
+            core_info = ev.core_info
             
             # Call ImageSynthesis API
             response = ImageSynthesis.call(
@@ -106,275 +83,47 @@ class ScreenplayImageWorkflow(Workflow):
                 raise Exception(f"Image generation failed: {response.message}")
 
             # Get screenplay from context
-            screenplay = await ctx.get("screenplay")
-            return CollectImagesEvent(
-                screenplay=screenplay,
-                image_result={scene_num: image_result}
-            )
+            return StopEvent(result=image_result)
         except Exception as e:
             logger.error(f"Failed to generate image: {str(e)}")
             raise
-
-    @step
-    async def step_collect_results(self, ctx: Context, ev: CollectImagesEvent) -> StopEvent:
-        # Get screenplay from context - add await here
-        screenplay = json.loads(await ctx.get("screenplay"))
-        result = ctx.collect_events(ev, [CollectImagesEvent] * len(screenplay["scenes"]))
-        if result is None:
-            return None
-
-        # Combine all results into a single dictionary
-        combined_results = {}
-        for event in result:
-            combined_results.update(event.image_result)
-        
-        return StopEvent(result={"images": combined_results})
 
 async def main():
     print("Starting main workflow execution")
     # Test content
     test_content = """
-{
-    "title": "小红帽的中文冒险",
-    "difficulty": "Beginner",
-    "mainCharacters": [
-        {
-            "name": "小红帽",
-            "role": "主角",
-            "background": "一个可爱的小姑娘，总是戴着奶奶送给她的红色丝绒帽子。她天真无邪，好奇心强。",
-            "personality": "善良、好奇、有点儿天真",
-            "languageLevel": "初级"
-        },
-        {
-            "name": "妈妈",
-            "role": "支持角色",
-            "background": "小红帽的母亲，非常关心女儿的安全和教育。",
-            "personality": "慈爱、谨慎",
-            "languageLevel": "中级"
-        },
-        {
-            "name": "奶",
-            "role": "支持角色",
-            "background": "住在森林里的老奶奶，非常疼爱小红帽。",
-            "personality": "慈祥、智慧",
-            "languageLevel": "高级"
-        },
-        {
-            "name": "狼",
-            "role": "反派",
-            "background": "狡猾的狼，试图欺骗小红帽。",
-            "personality": "狡猾、贪婪",
-            "languageLevel": "高级"
-        }
-    ],
-    "scenes": [
-        {
-            "sceneNumber": 1,
-            "location": "小红帽家的厨房",
-            "timeOfDay": "早上",
-            "screenContent": "阳光透过窗户洒进厨房，妈妈正在准备蛋糕和葡萄酒。小红帽坐在餐桌旁，认真听着妈妈的叮嘱。",
-            "playerBehavior": {
-                "dialogue": [
-                    {
-                        "character": "妈妈",
-                        "chinese": "来，小红帽，这里有一块蛋糕和一瓶葡萄酒，快给奶奶送去。奶奶生病了，身子很虚弱，吃了这些就会好一些的。"
-                    },
-                    {
-                        "character": "小红帽",
-                        "chinese": "我会小心的。"
-                    }
-                ],
-                "actions": "妈妈把蛋糕和葡萄酒递给小红帽，小红帽接过东西，向妈妈保证会注意安全。"
-            },
-            "playerChoice": [
-                {
-                    "option": "A",
-                    "chinese": "直接去奶奶家",
-                    "consequence": "小红帽直接前往奶奶家，路上没有遇到狼。"
-                },
-                {
-                    "option": "B",
-                    "chinese": "先在花园里采花",
-                    "consequence": "小红帽决定去花园采花，结果遇到了狼。"
-                }
-            ]
-        },
-        {
-            "sceneNumber": 2,
-            "location": "森林小路",
-            "timeOfDay": "上午",
-            "screenContent": "小红帽走在森林小路上，四周是茂密的树木和美丽的花朵。阳光透过树叶洒在地上，形成斑驳的光影。",
-            "playerBehavior": {
-                "dialogue": [
-                    {
-                        "character": "狼",
-                        "chinese": "你好，小红帽，这么早要到哪里去呀？"
-                    },
-                    {
-                        "character": "小红帽",
-                        "chinese": "我要到奶奶去。"
-                    }
-                ],
-                "actions": "狼装作友善的样子，与小红帽交谈。红帽天真地回答狼的问题。"
-            },
-            "playerChoice": [
-                {
-                    "option": "A",
-                    "chinese": "告诉狼奶奶的住址",
-                    "consequence": "小红帽告诉狼奶奶的住址，狼计划直接去找奶奶。"
-                },
-                {
-                    "option": "B",
-                    "chinese": "保持警惕，不透露信息",
-                    "consequence": "小红帽保持警惕，没有告诉狼奶奶的具体住址。"
-                }
-            ]
-        },
-        {
-            "sceneNumber": 3,
-            "location": "奶奶的房子",
-            "timeOfDay": "中午",
-            "screenContent": "奶奶的房子坐落在三棵大橡树下，周围是核桃树篱笆。房门敞开着，显得有些奇怪。",
-            "playerBehavior": {
-                "dialogue": [
-                    {
-                        "character": "小红帽",
-                        "chinese": "早上好！"
-                    },
-                    {
-                        "character": "狼（假扮奶奶）",
-                        "chinese": "哎，奶奶，你的耳朵怎么这样大呀？"
-                    },
-                    {
-                        "character": "小红帽",
-                        "chinese": "为了更好地听你说话呀，乖乖。"
-                    }
-                ],
-                "actions": "小红帽走进房子，发现奶奶躺在床上，但感觉有些不对劲。她开始询问奶奶的变化。"
-            },
-            "playerChoice": [
-                {
-                    "option": "A",
-                    "chinese": "继续问问题",
-                    "consequence": "小红帽继续提问，最终被狼吞掉。"
-                },
-                {
-                    "option": "B",
-                    "chinese": "察觉危险，逃跑",
-                    "consequence": "小红帽察觉到危险，赶紧逃跑并寻求帮助。"
-                }
-            ]
-        },
-        {
-            "sceneNumber": 4,
-            "location": "猎人的小屋",
-            "timeOfDay": "下午",
-            "screenContent": "猎人正巧路过奶奶的房子，听到里面的动静后进去查看。他发现了狼并救出了小红帽和奶奶。",
-            "playerBehavior": {
-                "dialogue": [
-                    {
-                        "character": "猎人",
-                        "chinese": "这老太太鼾打得好响啊！我要进去看看她是不是出什么事了。"
-                    },
-                    {
-                        "character": "小红帽",
-                        "chinese": "真把我吓坏了！狼肚子里黑漆漆的。"
-                    }
-                ],
-                "actions": "猎人用剪刀剪开狼的肚子，救出了小红帽和奶奶。小红帽感激不已。"
-            },
-            "playerChoice": [
-                {
-                    "option": "A",
-                    "chinese": "感谢猎人",
-                    "consequence": "小红帽真诚地感谢猎人，建立了友谊。"
-                },
-                {
-                    "option": "B",
-                    "chinese": "感到害怕，哭泣",
-                    "consequence": "小红帽感到害怕，哭了起来，猎人安慰她。"
-                }
-            ]
-        },
-        {
-            "sceneNumber": 5,
-            "location": "奶奶的房子",
-            "timeOfDay": "傍晚",
-            "screenContent": "奶奶吃了小红帽带来的蛋糕和葡萄酒，精神好多了。小红帽和奶奶一起回忆今天的经历，并决定以后更加小心。",
-            "playerBehavior": {
-                "dialogue": [
-                    {
-                        "character": "奶奶",
-                        "chinese": "我们把门关紧，不让它进来。"
-                    },
-                    {
-                        "character": "小红帽",
-                        "chinese": "要是妈妈不允许，我一辈子也不独自离开大路，跑进森林了。"
-                    }
-                ],
-                "actions": "小红帽和奶奶一起加固房子的防御措施，确保不再有危险。"
-            },
-            "playerChoice": [
-                {
-                    "option": "A",
-                    "chinese": "提议下次送蛋糕时更小心",
-                    "consequence": "小红帽提议下次送蛋糕时更加小心，奶奶表示赞同。"
-                },
-                {
-                    "option": "B",
-                    "chinese": "决定再也不独自出门",
-                    "consequence": "小红帽决定再也不独自出门，奶奶安慰她。"
-                }
-            ]
-        }
-    ],
-    "storyProgression": {
-        "beginning": "小红帽接受妈妈的务，准备去奶奶家送蛋糕和葡萄酒。",
-        "middle": "小红帽在路上遇到狼，被骗去了奶奶家。狼吃掉了奶奶并假扮成奶奶等待小红帽。小红帽察觉到危险，但最终还是被狼吞掉。猎人及时赶到，救出了小红帽和奶奶。",
-        "end": "小红帽和奶奶平安归来，决定以后更加小心。小红帽学会了警惕和自我保护的重要性。"
-    },
-    "learning": {
-        "keyVocabulary": [
-            {
-                "chinese": "蛋糕",
-                "pinyin": "dàngāo",
-                "usage": "妈妈给小红帽一块蛋糕。"
-            },
-            {
-                "chinese": "葡萄酒",
-                "pinyin": "pútáojiǔ",
-                "usage": "妈妈给小红帽一瓶葡萄酒。"
-            },
-            {
-                "chinese": "森林",
-                "pinyin": "sēnlín",
-                "usage": "小红帽走在森林小路上。"
-            },
-            {
-                "chinese": "奶奶",
-                "pinyin": "nǎinai",
-                "usage": "小红帽要去奶奶家。"
-            },
-            {
-                "chinese": "警惕",
-                "pinyin": "jǐngtì",
-                "usage": "小红帽保持警惕，不告诉狼奶奶的住址。"
-            }
-        ],
-        "grammarPoints": [
-            {
-                "pattern": "要 + 动词",
-                "explanation": "表示打算或计划做某事。",
-                "example": "我要去奶奶家。"
-            },
-            {
-                "pattern": "为了 + 动词",
-                "explanation": "表示目的。",
-                "example": "为了更好地听你说话。"
-            }
-        ]
-    }
-}
+从前有个可爱的小姑娘，谁见了都喜欢，但最喜欢她的是她的奶奶，简直是她要什么就给她什么。 一次，奶奶送给小姑娘一顶用丝绒做的小红帽，戴在她的头上正好合适。 从此，姑娘再也不愿意戴任何别的帽子，于是大家便叫她"小红帽"。
+一天，妈妈对小红帽说："来，小红帽，这里有一块蛋糕和一瓶葡萄酒，快给奶奶送去，奶奶生病了，身子很虚弱，吃了这些就会好一些的。趁着现在天还没有热，赶紧动身吧。在路上要好好走，不要跑，也不要离开大路，否则你会摔跤的，那样奶奶就什么也吃不上了。到奶奶家的时候，别忘了说'早上好'，也不要一进屋就东瞧西瞅。"
+"我会小心的。"小红帽对妈妈说，并且还和妈妈拉手作保证。
+奶奶住在村子外面的森林里，离小红帽家有很长一段路。 小红帽刚走进森林就碰到了一条狼。 小红帽不知道狼是坏家伙，所以一点也不怕它。
+"你好，小红帽，"狼说。
+"谢谢你，狼先生。"
+"小红帽，这么早要到哪里去呀？"
+"我要到奶奶家去。"
+"你那围裙下面有什么呀？"
+"蛋糕和葡萄酒。昨天我们家烤了一些蛋糕，可怜的奶奶生了病，要吃一些好东西才能恢复过来。"
+"你奶奶住在哪里呀，小红帽？"
+"进了林子还有一段路呢。她的房子就在三棵大橡树下，低处围着核桃树篱笆。你一定知道的。"小红帽说。
+狼在心中盘算着："这小东西细皮嫩肉的，味道肯定比那老太婆要好。我要讲究一下策略，让她俩都逃不出我的手心。"于是它陪着小红帽走了一会儿，然后说："小红帽，你看周围这些花多么美丽啊！干吗不回头看一看呢？还有这些小鸟，它们唱得多么动听啊！你大概根本没有听到吧？林子里的一切多么美好啊，而你却只管往前走，就像是去上学一样。"
+小红帽抬起头来，看到阳光在树木间来回跳荡，美丽的鲜花在四周开放，便想："也许我该摘一把鲜花给奶奶，让她高兴高兴。现在天色还早，我不会去迟的。"她于是离开大路，走进林子去采花。 她每采下一朵花，总觉得前面还有更美丽的花朵，便又向前走去，结果一直走到了林子深处。
+就在此时，狼却直接跑到奶奶家，敲了敲门。
+"是谁呀？"
+"是小红帽。"狼回答，"我给你送蛋糕和葡萄酒来了。快开门哪。"
+"你拉一下门栓就行了，"奶奶大声说，"我身上没有力气，起不来。"
+狼刚拉起门栓，那门就开了。 狼二话没说就冲到奶奶的床前，把奶奶吞进了肚子。 然后她穿上奶奶的衣服，戴上她的帽子，躺在床上，还拉上了帘子。
+可这时小红帽还在跑来跑去地采花。 直到采了许多许多，她都拿不了啦，她才想起奶奶，重新上路去奶奶家。
+看到奶奶家的屋门敞开着，她感到很奇怪。 她一走进屋子就有一种异样的感觉，心中便想："天哪！平常我那么喜欢来奶奶家，今天怎么这样害怕？"她大声叫道："早上好！"，可是没有听到回答。 她走到床前拉开帘子，只见奶奶躺在床上，帽子拉得低低的，把脸都遮住了，样子非常奇怪。
+"哎，奶奶，"她说，"你的耳朵怎么这样大呀？"
+"为了更好地听你说话呀，乖乖。"
+"可是奶奶，你的眼睛怎么这样大呀？"小红帽又问。
+"为了更清楚地看你呀，乖乖。"
+"奶奶，你的手怎么这样大呀？"
+"可以更好地抱着你呀。"
+"奶奶，你的嘴巴怎么大得很吓人呀？"
+"可以一口把你吃掉呀！"
+狼刚把话说完，就从床上跳起来，把小红帽吞进了肚子，狼满足了食欲之后便重新躺到床上睡觉，而且鼾声震天。 一位猎人碰巧从屋前走过，心想："这老太太鼾打得好响啊！我要进去看看她是不是出什么事了。"猎人进了屋，来到床前时却发现躺在那里的竟是狼。 "你这老坏蛋，我找了你这么久，真没想到在这里找到你！"他说。 他正准备向狼开枪，突然又想到，这狼很可能把奶奶吞进了肚子，奶奶也许还活着。 猎人就没有开枪，而是操起一把剪刀，动手把呼呼大睡的狼的肚子剪了开来。 他刚剪了两下，就看到了红色的小帽子。 他又剪了两下，小姑娘便跳了出来，叫道："真把我吓坏了！狼肚子里黑漆漆的。"接着，奶奶也活着出来了，只是有点喘不过气来。 小红帽赶紧跑去搬来几块大石头，塞进狼的肚子。 狼醒来之后想逃走，可是那些石头太重了，它刚站起来就跌到在地，摔死了。
+三个人高兴极了。 猎人剥下狼皮，回家去了；奶奶吃了小红帽带来的蛋糕和葡萄酒，精神好多了；而小红帽却在想："要是妈妈不允许，我一辈子也不独自离开大路，跑进森林了。"
+人们还说，小红帽后来又有一次把蛋糕送给奶奶，而且在路上又有一只狼跟她搭话，想骗她离开大路。 可小红帽这次提高了警惕，头也不回地向前走。 她告诉奶奶她碰到了狼，那家伙嘴上虽然对她说"你好"，眼睛里却露着凶光，要不是在大路上，它准把她给吃了。 "那么，"奶奶说，"我们把门关紧，不让它进来。"不一会儿，狼真的一面敲着门一面叫道："奶奶，快开门呀。我是小红帽，给你送蛋糕来了。"但是她们既不说话，也不开门。 这长着灰毛的家伙围着房子转了两三圈，最后跳上屋顶，打算等小红帽在傍晚回家时偷偷跟在她的后面，趁天黑把她吃掉。 可奶奶看穿了这家伙的坏心思。 她想起屋子前有一个大石头槽子，便对小姑娘说："小红帽，把桶拿来。我昨天做了一些香肠，提些煮香肠的水去倒进石头槽里。"小红帽提了很多很多水，把那个大石头槽子装得满满的。 香肠的气味飘进了狼的鼻孔，它使劲地用鼻子闻呀闻，并且朝下张望着，到最后把脖子伸得太长了，身子开始往下滑。 它从屋顶上滑了下来，正好落在大石槽中，淹死了。 小红帽高高兴兴地回了家，从此再也没有谁伤害过她。
     """
     
     # Initialize the workflow
