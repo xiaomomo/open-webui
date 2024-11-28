@@ -7,8 +7,8 @@ from llama_index.core.workflow import (
 )
 from dashscope import Generation
 import json
-# from .prompts import *
-from prompts import *
+from .prompts import *
+# from prompts import *
 import logging
 from typing import Union
 import os
