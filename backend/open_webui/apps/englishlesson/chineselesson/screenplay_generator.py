@@ -56,11 +56,13 @@ def saveImageToStatic(screenplayImageUrl):
 VOICE_OPTIONS = {
     'host': {
         'refer_wav': 'output/slicer_opt/blippi_v3.mp3_0004445440_0004588480.wav',
-        'prompt_text': 'Wait! Look at this! It\'s a beautiful couch!'
+        'prompt_text': 'Wait! Look at this! It\'s a beautiful couch!',
+        'speaker_name': 'default'
     },
     'character': {
         'refer_wav': 'output/data/littlepony/slicer_opt/littlepony5minter.m4a_0007617920_0007816960.wav',
-        'prompt_text': 'I don\'t want to go either. Nope, I\'ve made up my mind. Spike, you can send the letter now. It\'s okay, girls.'
+        'prompt_text': 'I don\'t want to go either. Nope, I\'ve made up my mind. Spike, you can send the letter now. It\'s okay, girls.',
+        'speaker_name': 'littleponyv2'
     }
 }
 
@@ -68,7 +70,7 @@ VOICE_OPTIONS = {
 base_url = "http://127.0.0.1:9880"  # 替换为实际的 TTS 服务 URL
 static_audio_folder = "/Users/liuqingjie/code/ai-tts/open-webui/static/static/screenplay_audio/"
 
-async def generate_audio(text, filename, voice_type='host'):
+async def generate_audio(text, filename, voice_type='host', max_retries=3):
     # 确保音频目录存在
     os.makedirs(static_audio_folder, exist_ok=True)
     
@@ -79,34 +81,50 @@ async def generate_audio(text, filename, voice_type='host'):
         'prompt_language': 'en',
         'text': text,
         'text_language': 'zh',
-        'speaker_name': 'littleponyv2'
+        'speaker_name': voice_config['speaker_name']
     }
     
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(base_url, params=params) as response:
-                if response.status != 200:
-                    print(f"Error response from TTS service: {response.status}")
-                    print(f"Response text: {await response.text()}")
-                    return None
-                
-                # Handle streaming response
-                chunks = []
-                async for chunk in response.content.iter_any():
-                    chunks.append(chunk)
-                content = b''.join(chunks)
-        
-        audio_path = os.path.join(static_audio_folder, filename)
-        async with aiofiles.open(audio_path, 'wb') as f:
-            await f.write(content)
-        
-        return f"/static/screenplay_audio/{filename}"
-    except aiohttp.ClientError as e:
-        print(f"Network error while generating audio for {filename}: {str(e)}")
-        return None
-    except Exception as e:
-        print(f"Unexpected error generating audio for {filename}: {str(e)}")
-        return None
+    for attempt in range(max_retries):
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(base_url, params=params) as response:
+                    if response.status != 200:
+                        print(f"Error response from TTS service: {response.status}")
+                        print(f"Response text: {await response.text()}")
+                        if attempt < max_retries - 1:
+                            print(f"Retrying... Attempt {attempt + 2}/{max_retries}")
+                            await asyncio.sleep(1)  # 等待1秒后重试
+                            continue
+                        return None
+                    
+                    # Handle streaming response
+                    chunks = []
+                    async for chunk in response.content.iter_any():
+                        chunks.append(chunk)
+                    content = b''.join(chunks)
+            
+            audio_path = os.path.join(static_audio_folder, filename)
+            async with aiofiles.open(audio_path, 'wb') as f:
+                await f.write(content)
+            
+            return f"/static/screenplay_audio/{filename}"
+            
+        except (aiohttp.ClientError, TransferEncodingError) as e:
+            print(f"Network error while generating audio for {filename}: {str(e)}")
+            if attempt < max_retries - 1:
+                print(f"Retrying... Attempt {attempt + 2}/{max_retries}")
+                await asyncio.sleep(1)  # 等待1秒后重试
+                continue
+            return None
+        except Exception as e:
+            print(f"Unexpected error generating audio for {filename}: {str(e)}")
+            if attempt < max_retries - 1:
+                print(f"Retrying... Attempt {attempt + 2}/{max_retries}")
+                await asyncio.sleep(1)  # 等待1秒后重试
+                continue
+            return None
+    
+    return None
 
 
 async def generate_all_audio(screenplay):
@@ -179,19 +197,17 @@ async def generate_all_audio(screenplay):
 
 async def save_unit(item):
 
-    # # 调用工作流结构化screenplay
-    # w = ScreenplayWorkflow(timeout=600, verbose=False)
-    # print(f"workflow start with content:{item}")
-    # screenplay = await w.run(origin_content=item)
-    #
-    # # 调用工作流生成图片
-    # w = ScreenplayImageWorkflow(timeout=600, verbose=False)
-    # screenplayImage = await w.run(origin_content=item)
-    # # save it to static folder
-    # screenplayImagePath = saveImageToStatic(screenplayImage)
-    # print(f"workflow generate question_json:{screenplayImage}")
-    screenplay = item
-    screenplayImagePath = ''
+    # 调用工作流结构化screenplay
+    w = ScreenplayWorkflow(timeout=600, verbose=False)
+    print(f"workflow start with content:{item}")
+    screenplay = await w.run(origin_content=item)
+
+    # 调用工作流生成图片
+    w = ScreenplayImageWorkflow(timeout=600, verbose=False)
+    screenplayImage = await w.run(origin_content=item)
+    # save it to static folder
+    screenplayImagePath = saveImageToStatic(screenplayImage)
+    print(f"workflow generate question_json:{screenplayImage}")
     screenplay_dict = json.loads(screenplay) if isinstance(screenplay, str) else screenplay
     # save item to sqlite
     fredisaLesson = FredisaLessonForm(
@@ -358,7 +374,7 @@ async def test_save_unit():
             "playerChoiceEvaluate": "如果选择A，狼会假装友善并继续跟随小红帽；如果选择B，狼会直接去找奶奶。",
             "location": "森林深处",
             "timeOfDay": "中午",
-            "screenContent": "小红帽被周围的美景吸引，开始采花。她越走越深，忘记了时间。与此同���，狼找到了奶奶的家，并吞下了奶奶。",
+            "screenContent": "小红帽被周围的美景吸引，开始采花。她越走越深，忘记了时间。与此同，狼找到了奶奶的家，并吞下了奶奶。",
             "charactersBehavior": [
                 {
                     "charactersName": "小红帽",
@@ -412,17 +428,9 @@ async def test_save_unit():
     except Exception as e:
         print(f"❌ Test failed: {str(e)}")
 
-if __name__ == "__main__":
-    asyncio.run(test_save_unit())
-
 # if __name__ == "__main__":
-#     # Test mode flag
-#     if len(sys.argv) > 1 and sys.argv[1] == "--test":
-#         # Run test
-#         print("Running test mode...")
-#         asyncio.run(test_save_unit())
-#     else:
-#         # Run original process
-#         print("Running normal process mode...")
-#         asyncio.run(process_all_stories())
+#     asyncio.run(test_save_unit())
+
+if __name__ == "__main__":
+    asyncio.run(process_all_stories())
 
