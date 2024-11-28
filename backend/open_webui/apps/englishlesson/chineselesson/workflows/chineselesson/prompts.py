@@ -1,7 +1,7 @@
 prompt_generate_screenplay = """
 Generate a comprehensive and engaging Chinese language learning screenplay that tells a complete story arc:
 
-Input Content: 
+Input Content:
 <content>
 {content}
 </content>
@@ -25,42 +25,22 @@ Requirements:
      * Name
      * Personality traits and quirks
      * Background story
-     * Relationship to other characters
-     * Language proficiency level
 
 3. Scene Design:
    Each scene must include:
-   - screenContent: 
+   - screenContent:
      * Detailed environment descriptions, include:Time and location context/Atmosphere and mood setting/Cultural elements naturally woven in
-   - playerBehavior: 
+   - playerBehavior:
      * Natural dialogue progression, the dialogue content need Complete and self-consistent
      * Character interactions that build relationships
      * Non-verbal communication
-     * Cultural context and social dynamics
-   - playerChoice: 
+   - playerChoice:
      * 2-3 meaningful options that:
        > Affect the story direction
        > Impact relationships
        > Vary in language difficulty
        > Lead to different scene outcomes
      * Choices should influence future scenes
-
-4. Learning Integration:
-   - Progressive difficulty across scenes
-   - Each scene introduces:
-     * 3-5 key vocabulary words
-     * 1-2 grammar patterns
-     * Cultural concepts or customs
-   - Natural repetition of previous vocabulary
-   - Context-appropriate language use
-   - Practical conversation scenarios
-
-5. Cultural Elements:
-   - Authentic Chinese customs and traditions
-   - Modern Chinese social norms
-   - Cultural misunderstanding opportunities
-   - Traditional and contemporary elements
-   - Regional variations when relevant
 
 Output Format:
 {{
@@ -80,7 +60,7 @@ Output Format:
     "scenes": [
         {{
             "playerChoiceEvaluate":"give evaluate of playerChoice", //exist if has user choice
-	    "location": "Where the scene takes place",
+        "location": "Where the scene takes place",
             "timeOfDay": "When the scene occurs",
             "screenContent": "Detailed setting and situation description",
 
@@ -103,28 +83,7 @@ Output Format:
             }}
 
         }}
-    ],
-    "storyProgression": {{
-        "beginning": "Setup and initial situation",
-        "middle": "Development and complications",
-        "end": "Resolution and learning outcomes"
-    }},
-    "learning":{{
-        "keyVocabulary": [
-                {{
-                    "chinese": "汉字",
-                    "pinyin": "Pinyin",
-                    "usage": "Example usage in context"
-                }}
-            ],
-            "grammarPoints": [
-                {{
-                    "pattern": "Grammar pattern",
-                    "explanation": "How to use it",
-                    "example": "Example in context"
-                }}
-            ]
-    }}
+    ]
 }}
 
 Remember to:
@@ -282,5 +241,12 @@ Here is one example:
 Now It's your time to extract information
 < input>
 {scene}
+</input>
+"""
+
+reduce_prompt = """
+help me reduce the article to 1000 words. keep the story arc and the main character.
+<input>
+{content}
 </input>
 """
