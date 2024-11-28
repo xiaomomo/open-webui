@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount, tick } from 'svelte';
+    import { onMount, tick, onDestroy } from 'svelte';
     import Stars from './components/Stars.svelte';
     import HostSection from './components/HostSection.svelte';
     import GameArea from './components/GameArea.svelte';
@@ -20,8 +20,19 @@
     let currentSceneIndex = 0;
     let isLoading = true;
     let showInputSection = false;
+    let showStartButton = false;
+    let isSceneReady = false;
     let playerChoices = [];
     let gameChat: GameChat;
+    let audioCache = new Map();
+    let aiResponseCache = new Map();
+
+    // 添加 window 类型声明
+    declare global {
+        interface Window {
+            startScene: () => void;
+        }
+    }
 
     onMount(async () => {
         // 先初始化 GameChat
@@ -93,31 +104,173 @@
         activeCharacter = character;
         const response = getNextResponse(character, currentSceneIndex + 1);
         messages = [...messages, { type: 'npc', character, text: response }];
-        hostMessage = `${character}说话了！让我们听听看...`;
-        await playTextToSpeech(response);
+        hostMessage = `${character}说话了！让我们���听看...`;
+        await playTextToSpeech(character, response);
     }
 
     async function handleOptionClick(choice) {
         // 记录玩家选择
         if (gameChat) {
-            await gameChat.submitGameMessage(`${choice.option}: ${choice.content}`);
+            await gameChat.submitGameMessage(`screenIndexOption${currentSceneIndex}:${choice.option}: ${choice.content}`);
         }
 
-        hostMessage = "机器人在思考...";
+        hostMessage = "正在处理...";
         playerChoices = [];
         showInputSection = false;
 
-        // 获取所有对话历史
-        const chatHistory = gameChat ? gameChat.getCurrentMessages() : [];
+        try {
+            // 尝试从缓存获取响应
+            const cacheKey = `${choice.option}:${choice.content}`;
+            let nextSceneData = aiResponseCache.get(cacheKey);
+
+            // 如果缓存中没有，实时获取
+            if (!nextSceneData) {
+                hostMessage = "机器人在思考...";
+                nextSceneData = await preloadAIResponse(choice);
+            }
+
+            if (nextSceneData) {
+                if (gameChat) {
+                    await gameChat.submitGameMessage(JSON.stringify(nextSceneData));
+                }
+
+                currentSceneIndex = parseInt(nextSceneData.sceneNumber) - 1;
+                processScene(nextSceneData);
+            }
+
+        } catch (error) {
+            console.error('Error handling option click:', error);
+            hostMessage = '抱歉，发生了一些错误...';
+        }
+    }
+
+    function handleSendMessage(text) {
+        messages = [...messages, { type: 'player', text }];
+        hostMessage = '让我们继续调查...';
+    }
+
+    // 首先定义 sleep 函数
+    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+    // 修改预加载函数
+    async function preloadAudio(role: string, text: string): Promise<string> {
+        const cacheKey = `${role}:${text}`;
         
         try {
-            const prompt = `
+            // 检查缓存
+            const cachedUrl = audioCache.get(cacheKey);
+            if (cachedUrl) {
+                return cachedUrl;
+            }
+
+            const defaultVoice = $settings?.audio?.tts?.defaultVoice;
+            const configVoice = $config?.audio?.tts?.voice;
+            const selectedVoice = defaultVoice === configVoice
+                ? ($settings?.audio?.tts?.voice ?? configVoice)
+                : configVoice;
+
+            if (selectedVoice) {
+                // 根据角色选择不同的语音配置
+                const voicePrompt = role === 'host' ? 'BLIPPI' : 'LITTLE_PONY';
+                
+                const audio = await synthesizeSoVITSSpeech(
+                    localStorage.token,
+                    selectedVoice,
+                    text,
+                    undefined,
+                    'zh',
+                    voicePrompt
+                );
+
+                if (audio) {
+                    const blob = await audio.blob();
+                    const blobUrl = URL.createObjectURL(blob);
+                    audioCache.set(cacheKey, blobUrl);
+                    return blobUrl;
+                }
+            }
+        } catch (error) {
+            console.error('Audio preload error:', error);
+        }
+        return null;
+    }
+
+    // 修改播放函数
+    async function playTextToSpeech(role: string, text: string) {
+        try {
+            const cacheKey = `${role}:${text}`;
+            let blobUrl = audioCache.get(cacheKey);
+            
+            if (!blobUrl) {
+                // 如果缓存中没有，实时获取
+                blobUrl = await preloadAudio(role, text);
+            }
+
+            if (blobUrl) {
+                const audioElement = new Audio(blobUrl);
+                await new Promise((resolve) => {
+                    audioElement.addEventListener('ended', () => {
+                        resolve(true);
+                    });
+                    audioElement.play();
+                });
+            }
+        } catch (error) {
+            console.error('TTS Error:', error);
+        }
+    }
+
+    // 修改场景预加载函数
+    async function preloadSceneAudio(scene) {
+        const audioPromises = [];
+
+        // 收集所有需要预加载的文本
+        if (scene.playerChoiceEvaluate) {
+            audioPromises.push(preloadAudio('host', scene.playerChoiceEvaluate));
+        }
+        
+        audioPromises.push(preloadAudio('host', scene.screenContent));
+
+        if (scene.charactersBehavior) {
+            scene.charactersBehavior.forEach(dialog => {
+                audioPromises.push(preloadAudio(
+                    dialog.charactersName,
+                    dialog.behaviorContent
+                ));
+            });
+
+            if (scene.whatNextMainPlayerShouldDo) {
+                audioPromises.push(preloadAudio(
+                    'host',
+                    scene.whatNextMainPlayerShouldDo.question
+                ));
+                
+                const choices = scene.whatNextMainPlayerShouldDo.playerChoice || [];
+                choices.forEach(choice => {
+                    audioPromises.push(preloadAudio(
+                        'host',
+                        `选项 ${choice.option}： ${choice.content}`
+                    ));
+                });
+            }
+        }
+
+        // 并行预加载所有音频
+        await Promise.all(audioPromises);
+    }
+
+    // 添加预加载AI响应的函数
+    async function preloadAIResponse(choice) {
+        const messages: Record<string | number, string> = gameChat.getCurrentMessages();
+            
+        messages["screenIndexOption" + currentSceneIndex + ":" + choice.option] = choice.content;
+        const prompt = `
             you are a screenplay host, you need to answer the player's question and guide the player to the next scene.
             the following is the chat history:
-            ${JSON.stringify(chatHistory)}
+            ${JSON.stringify(messages)}
             It's important to note that your answer should only be in json format like this:
                 {
-                            "playerChoiceEvaluate":"give evaluate of playerChoice", //exist if has user choice
+                            "playerChoiceEvaluate":"give evaluate of playerChoice",
                             "sceneNumber": "5",
                             "screenContent": "",
                             "charactersBehavior":[
@@ -141,80 +294,72 @@
                 }
             `;
 
-            // 发送请求获取下一个场景
-            const response = await fetch(`${WEBUI_API_BASE_URL}/qwenproxy/get_ai_response?prompt=${prompt}`, {
+        try {
+            const response = await fetch(`${WEBUI_API_BASE_URL}/qwenproxy/get_ai_response?prompt=${encodeURIComponent(prompt)}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json'
                 }
             });
 
-            const responseData = await response.text(); // 先获取原始文本
-            // 先尝试解析一次，然后再解析内部的 JSON 字符串
+            const responseData = await response.text();
             const parsedOnce = JSON.parse(responseData.replace(/\\n/g, ''));
             const nextSceneData = typeof parsedOnce === 'string' ? JSON.parse(parsedOnce) : parsedOnce;
-            console.log(nextSceneData); // 用于调试
-
-            if (gameChat) {
-                await gameChat.submitGameMessage(JSON.stringify(nextSceneData));
-            }
-
-            currentSceneIndex = parseInt(nextSceneData.sceneNumber) - 1;
-            processScene(nextSceneData);
-
+            
+            // 缓存响应
+            const cacheKey = `${choice.option}:${choice.content}`;
+            aiResponseCache.set(cacheKey, nextSceneData);
+            
+            // 预加载这个场景的音频
+            await preloadSceneAudio(nextSceneData);
+            
+            return nextSceneData;
         } catch (error) {
-            console.error('Error fetching next scene:', error);
-            hostMessage = '抱歉，发生了一些错误...';
+            console.error('Error preloading AI response:', error);
+            return null;
         }
     }
 
-    function handleSendMessage(text) {
-        messages = [...messages, { type: 'player', text }];
-        hostMessage = '让我们继续调查...';
-    }
-
-    // 首先定义 sleep 函数
-    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-    // 添加新的语音合成函数
-    async function playTextToSpeech(text: string) {
-        try {
-            const defaultVoice = $settings?.audio?.tts?.defaultVoice;
-            const configVoice = $config?.audio?.tts?.voice;
-            const selectedVoice = defaultVoice === configVoice
-                ? ($settings?.audio?.tts?.voice ?? configVoice)
-                : configVoice;
-
-            if (selectedVoice) {
-                const audio = await synthesizeSoVITSSpeech(
-                    localStorage.token,
-                    selectedVoice,
-                    text
-                );
-
-                if (audio) {
-                    const blob = await audio.blob();
-                    const blobUrl = URL.createObjectURL(blob);
-                    const audioElement = new Audio(blobUrl);
-                    await audioElement.play();
-                }
-            }
-        } catch (error) {
-            console.error('TTS Error:', error);
-        }
-    }
-
-    // 修改 processScene 函数
+    // 修改 processScene 函数，添加选项预加载
     async function processScene(scene) {
+        // 只在第一个场景显示开始按钮
+        showStartButton = currentSceneIndex === 0;
+        isSceneReady = false;
+
+        // 在这里定义 startScene 函数
+        window.startScene = () => {}; // 初始化为空函数
+
+        // AI 响应预加载
+        if (scene.whatNextMainPlayerShouldDo) {
+            playerChoices = scene.whatNextMainPlayerShouldDo.playerChoice || [];
+            const preloadPromises = playerChoices.map(choice => preloadAIResponse(choice));
+            Promise.all(preloadPromises).catch(error => {
+                console.error('Error preloading choices:', error);
+            });
+        }
+        isSceneReady = true;
+
+        // 等待用户点击开始按钮
+        if (currentSceneIndex === 0) {
+            await new Promise<void>(resolve => {
+                window.startScene = () => {
+                    showStartButton = false;
+                    resolve();
+                };
+            });
+        }
+
+        // 预加载音频
+        await preloadSceneAudio(scene);
+
+        // 继续原有的场景处理逻辑
         if (scene.playerChoiceEvaluate) {
             hostMessage = scene.playerChoiceEvaluate;
-            await playTextToSpeech(scene.playerChoiceEvaluate);
-            await sleep(1000);
+            await playTextToSpeech('host', scene.playerChoiceEvaluate);
         }
         
         hostMessage = scene.screenContent;
-        await playTextToSpeech(scene.screenContent);
-        await sleep(1000);
+        await playTextToSpeech('host', scene.screenContent);
 
         if (scene.charactersBehavior) {
             messages = [];
@@ -224,22 +369,33 @@
                     character: dialog.charactersName,
                     text: dialog.behaviorContent
                 }];
-                await playTextToSpeech(dialog.behaviorContent);
-                await sleep(1000);
+                await playTextToSpeech(dialog.charactersName, dialog.behaviorContent);
             }
-            //聊完天后把消息messages 全部清空
-            await sleep(2000);
             messages = [];
 
             if (scene.whatNextMainPlayerShouldDo) {
-                await sleep(1000);
                 hostMessage = scene.whatNextMainPlayerShouldDo.question;
-                await playTextToSpeech(scene.whatNextMainPlayerShouldDo.question);
+                await playTextToSpeech('host', scene.whatNextMainPlayerShouldDo.question);
                 playerChoices = scene.whatNextMainPlayerShouldDo.playerChoice || [];
                 showInputSection = true;
+
+                for (const choice of playerChoices) {
+                    const choiceText = `选项 ${choice.option}： ${choice.content}`;
+                    await playTextToSpeech('host', choiceText);
+                }
+
             }
         }
     }
+
+    // 在组件卸载时清理缓存
+    onDestroy(() => {
+        audioCache.forEach(blobUrl => {
+            URL.revokeObjectURL(blobUrl);
+        });
+        audioCache.clear();
+        aiResponseCache.clear();
+    });
 </script>
 
 <div class="body">
@@ -248,6 +404,17 @@
         message={hostMessage}
         {title}
     />
+    {#if showStartButton && currentSceneIndex === 0}
+        <div class="start-button-container">
+            <button 
+                class="start-button" 
+                on:click={() => window.startScene()} 
+                disabled={!isSceneReady}
+            >
+                {isSceneReady ? '开始游戏' : '加载中...'}
+            </button>
+        </div>
+    {/if}
     {#if !isLoading && characters.length > 0}
         <GameArea
             {messages}
@@ -369,5 +536,35 @@
     :global(.player-message::after) {
         right: 20px;
         border-color: #dcffe4 transparent;
+    }
+
+    .start-button-container {
+        position: fixed;
+        bottom: 40px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1000;
+    }
+
+    .start-button {
+        background: linear-gradient(145deg, #ff69b4, #87ceeb);
+        border: 3px solid #fff;
+        border-radius: 15px;
+        padding: 12px 24px;
+        font-size: 1.2em;
+        color: #fff;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .start-button:hover:not(:disabled) {
+        transform: scale(1.05);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .start-button:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
     }
 </style>

@@ -12,7 +12,7 @@ summary this data:
 
 Input Content: 
 <content>
-从前，有个男人死了妻子，有个女人死了丈夫。 这个男人有个女儿，这个女人也有个女儿。 
+从前， 
 </content>
 
 

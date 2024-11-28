@@ -32,6 +32,7 @@ async def getScreenPlay():
 {
     "title": "小红帽的冒险",
     "difficulty": "Intermediate",
+    "screenplayIntro":"这是一个关于小红帽和妈妈的冒险故事。你准备好开始了吗？",
     "characters": [
         {
             "name": "小红帽",

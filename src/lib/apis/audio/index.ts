@@ -1,4 +1,5 @@
 import { AUDIO_API_BASE_URL } from '$lib/constants';
+import { VOICE_PROMPTS, DEFAULT_VOICE_PROMPT, type VoicePrompt } from './constants';
 
 export const getAudioConfig = async (token: string) => {
 	let error = null;
@@ -137,16 +138,25 @@ export const synthesizeSoVITSSpeech = async (
 	token: string = '',
 	speaker: string = 'alloy',
 	text: string = '',
-	model?: string
+	model?: string,
+	language: string = 'en',
+	voicePrompt?: VoicePrompt | string
 ) => {
 	let error = null;
 
-	const url = `http://127.0.0.1:9880/?refer_wav_path=${encodeURIComponent("output/slicer_opt/blippi_sound.mp3_0000832320_0000957760.wav")}&
-	prompt_text=${encodeURIComponent("Yes, I know the quickest way. We can go to school, the shops, the zoo.")}&
-	prompt_language=en&text=${encodeURIComponent(text)}&text_language=en&speed=0.9`;
+	let selectedPrompt = DEFAULT_VOICE_PROMPT;
+	if (typeof voicePrompt === 'string' && voicePrompt in VOICE_PROMPTS) {
+		selectedPrompt = VOICE_PROMPTS[voicePrompt];
+	} else if (voicePrompt && typeof voicePrompt === 'object') {
+		selectedPrompt = voicePrompt;
+	}
+
+	const url = `http://127.0.0.1:9880/?refer_wav_path=${encodeURIComponent(selectedPrompt.wavPath)}&
+	prompt_text=${encodeURIComponent(selectedPrompt.promptText)}&
+	prompt_language=en&text=${encodeURIComponent(text)}&text_language=${language}&speed=0.9`;
 
 	const res = await fetch(url, {
-		method: 'GET'
+			method: 'GET'
 	})
 		.then(async (res) => {
 			if (!res.ok) throw await res.json();
@@ -155,7 +165,6 @@ export const synthesizeSoVITSSpeech = async (
 		.catch((err) => {
 			error = err.detail;
 			console.log(err);
-
 			return null;
 		});
 
